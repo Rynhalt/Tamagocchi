@@ -454,7 +454,7 @@
 				DEVELOPMENT_TEAM = 2G8T9W9K47;
 				EX_ENABLE_EXTENSION_POINT_GENERATION = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = TamagocchiReportExtension-Info.plist;
+				INFOPLIST_FILE = "TamagocchiReportExtension-Info.plist";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.marcus.Tamagocchi.ReportExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -478,7 +478,7 @@
 				DEVELOPMENT_TEAM = 2G8T9W9K47;
 				EX_ENABLE_EXTENSION_POINT_GENERATION = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = TamagocchiReportExtension-Info.plist;
+				INFOPLIST_FILE = "TamagocchiReportExtension-Info.plist";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.marcus.Tamagocchi.ReportExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
