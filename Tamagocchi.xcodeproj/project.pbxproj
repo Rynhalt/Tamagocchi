@@ -9,12 +9,37 @@
 /* Begin PBXBuildFile section */
 		2D28C1712F9408E5005FB1B5 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 2D28C1702F9408D9005FB1B5 /* README.md */; };
 		2D28C17E2F940CE9005FB1B5 /* design.md in Resources */ = {isa = PBXBuildFile; fileRef = 2D28C17D2F940CE9005FB1B5 /* design.md */; };
+		5A28C1092F94021C005FB1B5 /* TamagocchiReportExtension.appex in CopyFiles */ = {isa = PBXBuildFile; fileRef = 5A28C1002F94021C005FB1B5 /* TamagocchiReportExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5A28C10A2F94021C005FB1B5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2D28C14A2F94021C005FB1B5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5A28C1052F94021C005FB1B5;
+			remoteInfo = TamagocchiReportExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		5A28C10B2F94021C005FB1B5 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				5A28C1092F94021C005FB1B5 /* TamagocchiReportExtension.appex in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2D28C1522F94021C005FB1B5 /* Tamagocchi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tamagocchi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2D28C1702F9408D9005FB1B5 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		2D28C17D2F940CE9005FB1B5 /* design.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = design.md; sourceTree = "<group>"; };
+		5A28C1002F94021C005FB1B5 /* TamagocchiReportExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TamagocchiReportExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -36,10 +61,22 @@
 			path = Tamagocchi;
 			sourceTree = "<group>";
 		};
+		5A28C1012F94021C005FB1B5 /* TamagocchiReportExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TamagocchiReportExtension;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		2D28C14F2F94021C005FB1B5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A28C1032F94021C005FB1B5 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -54,6 +91,7 @@
 			children = (
 				2D28C1702F9408D9005FB1B5 /* README.md */,
 				2D28C1542F94021C005FB1B5 /* Tamagocchi */,
+				5A28C1012F94021C005FB1B5 /* TamagocchiReportExtension */,
 				2D28C1532F94021C005FB1B5 /* Products */,
 				2D28C17D2F940CE9005FB1B5 /* design.md */,
 			);
@@ -63,6 +101,7 @@
 			isa = PBXGroup;
 			children = (
 				2D28C1522F94021C005FB1B5 /* Tamagocchi.app */,
+				5A28C1002F94021C005FB1B5 /* TamagocchiReportExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -77,10 +116,12 @@
 				2D28C14E2F94021C005FB1B5 /* Sources */,
 				2D28C14F2F94021C005FB1B5 /* Frameworks */,
 				2D28C1502F94021C005FB1B5 /* Resources */,
+				5A28C10B2F94021C005FB1B5 /* CopyFiles */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				5A28C10C2F94021C005FB1B5 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				2D28C1542F94021C005FB1B5 /* Tamagocchi */,
@@ -91,6 +132,28 @@
 			productName = Tamagocchi;
 			productReference = 2D28C1522F94021C005FB1B5 /* Tamagocchi.app */;
 			productType = "com.apple.product-type.application";
+		};
+		5A28C1052F94021C005FB1B5 /* TamagocchiReportExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A28C1062F94021C005FB1B5 /* Build configuration list for PBXNativeTarget "TamagocchiReportExtension" */;
+			buildPhases = (
+				5A28C1022F94021C005FB1B5 /* Sources */,
+				5A28C1032F94021C005FB1B5 /* Frameworks */,
+				5A28C1042F94021C005FB1B5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5A28C1012F94021C005FB1B5 /* TamagocchiReportExtension */,
+			);
+			name = TamagocchiReportExtension;
+			packageProductDependencies = (
+			);
+			productName = TamagocchiReportExtension;
+			productReference = 5A28C1002F94021C005FB1B5 /* TamagocchiReportExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -122,6 +185,7 @@
 			projectRoot = "";
 			targets = (
 				2D28C1512F94021C005FB1B5 /* Tamagocchi */,
+				5A28C1052F94021C005FB1B5 /* TamagocchiReportExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -136,6 +200,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5A28C1042F94021C005FB1B5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -146,7 +217,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5A28C1022F94021C005FB1B5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5A28C10C2F94021C005FB1B5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5A28C1052F94021C005FB1B5 /* TamagocchiReportExtension */;
+			targetProxy = 5A28C10A2F94021C005FB1B5 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		2D28C1612F94021E005FB1B5 /* Debug */ = {
@@ -162,7 +248,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
+				EX_ENABLE_EXTENSION_POINT_GENERATION = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Tamagocchi/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -208,7 +295,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
+				EX_ENABLE_EXTENSION_POINT_GENERATION = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Tamagocchi/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -357,6 +445,54 @@
 			};
 			name = Release;
 		};
+		5A28C1072F94021C005FB1B5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2G8T9W9K47;
+				EX_ENABLE_EXTENSION_POINT_GENERATION = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TamagocchiReportExtension-Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.marcus.Tamagocchi.ReportExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5A28C1082F94021C005FB1B5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2G8T9W9K47;
+				EX_ENABLE_EXTENSION_POINT_GENERATION = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TamagocchiReportExtension-Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.marcus.Tamagocchi.ReportExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -374,6 +510,15 @@
 			buildConfigurations = (
 				2D28C1612F94021E005FB1B5 /* Debug */,
 				2D28C1622F94021E005FB1B5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5A28C1062F94021C005FB1B5 /* Build configuration list for PBXNativeTarget "TamagocchiReportExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A28C1072F94021C005FB1B5 /* Debug */,
+				5A28C1082F94021C005FB1B5 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

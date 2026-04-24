@@ -6,7 +6,11 @@
 	<string>development</string>
 	<key>com.apple.developer.aps-environment</key>
 	<string>development</string>
+	<key>com.apple.developer.family-controls</key>
+	<true/>
 	<key>com.apple.developer.family-controls.app-and-website-usage</key>
+	<true/>
+	<key>com.apple.developer.healthkit</key>
 	<true/>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array/>
