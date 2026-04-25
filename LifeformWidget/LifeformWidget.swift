@@ -30,9 +30,9 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
     let showReport: Bool
 
     static let placeholder = LifeformWidgetStateSnapshot(
-        authorizationStatusText: "Not Determined",
-        authorizationMessage: "Waiting for data.",
-        selectionMessage: "No activity selected yet.",
+        authorizationStatusText: "未確認",
+        authorizationMessage: "データを待ってるよ",
+        selectionMessage: "まだ何も選ばれてないよ",
         selectedApps: 0,
         selectedCategories: 0,
         selectedWebDomains: 0,
@@ -55,33 +55,33 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
     var digitalStatusText: String {
         switch (authorizationStatusText, selectedItemCount > 0) {
         case ("Approved", true):
-            return "influence active"
+            return "スマホ負担あり"
         case ("Approved", false):
-            return "authorized, unselected"
+            return "許可だけ済み"
         default:
-            return "screen time locked"
+            return "スクリーンタイム未許可"
         }
     }
 
     var physicalTag: String {
         if stepCount >= 10_000 {
-            return "charged"
+            return "元気いっぱい"
         } else if stepCount >= 5_000 {
-            return "awake"
+            return "目がさめてる"
         } else if stepCount > 0 {
-            return "growing"
+            return "成長中"
         } else {
-            return "dormant"
+            return "休んでる"
         }
     }
 
     var moodText: String {
         if digitalPenalty >= 0.7 {
-            return "strained"
+            return "ちょっと疲れ気味"
         } else if physicalScore >= 0.45 {
-            return "growing"
+            return "成長中"
         } else {
-            return "resting"
+            return "ひとやすみ"
         }
     }
 }
@@ -130,8 +130,8 @@ struct LifeformWidget: Widget {
         StaticConfiguration(kind: kind, provider: LifeformWidgetProvider()) { entry in
             LifeformWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Lifeform")
-        .description("A single evolving creature that reflects behavior.")
+        .configurationDisplayName("ライフフォーム")
+        .description("毎日のようすで育つ、ひとつの生きもの。")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .containerBackgroundRemovable(true)
     }
@@ -216,7 +216,7 @@ private struct LifeformWidgetEntryView: View {
                 cardBackground
 
                 VStack(spacing: 8) {
-                    Text("Growmi Today")
+                    Text("今日のGrowmi")
                         .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundStyle(GrowmiWidgetTheme.textPrimary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -229,17 +229,17 @@ private struct LifeformWidgetEntryView: View {
 
             VStack(spacing: 8) {
                 MetricCard(
-                    title: "Steps",
+                    title: "歩数",
                     value: "\(entry.snapshot.stepCount)",
-                    detail: "Movement feeds Growmi",
+                    detail: "歩くほど育つよ",
                     ringProgress: entry.snapshot.physicalScore,
                     style: .growth
                 )
 
                 MetricCard(
-                    title: "Digital Strain",
+                    title: "SNS疲れ",
                     value: strainDescriptor,
-                    detail: "\(entry.snapshot.selectedItemCount) selected",
+                    detail: "\(entry.snapshot.selectedItemCount)件えらばれてるよ",
                     ringProgress: entry.snapshot.digitalPenalty,
                     style: .strain
                 )
@@ -252,7 +252,7 @@ private struct LifeformWidgetEntryView: View {
     private var largeLayout: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Growmi Today")
+                Text("今日のGrowmi")
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundStyle(GrowmiWidgetTheme.textPrimary)
                 Spacer()
@@ -278,25 +278,25 @@ private struct LifeformWidgetEntryView: View {
 
                     VStack(spacing: 10) {
                         MetricCard(
-                            title: "Physical Growth",
+                            title: "運動状況",
                             value: "\(entry.snapshot.stepCount)",
-                            detail: "\(Int(entry.snapshot.physicalScore * 100))% of target",
+                            detail: "目標の\(Int(entry.snapshot.physicalScore * 100))%",
                             ringProgress: entry.snapshot.physicalScore,
                             style: .growth
                         )
 
                         MetricCard(
-                            title: "Digital Strain",
+                            title: "SNS疲れ",
                             value: strainDescriptor,
-                            detail: "\(entry.snapshot.selectedItemCount) selected",
+                            detail: "\(entry.snapshot.selectedItemCount)件えらばれてるよ",
                             ringProgress: entry.snapshot.digitalPenalty,
                             style: .strain
                         )
 
                         MetricCard(
-                            title: "Selection Count",
+                            title: "選択数",
                             value: "\(entry.snapshot.selectedItemCount)",
-                            detail: "Apps + categories + domains",
+                            detail: "アプリ・カテゴリ・Webの合計",
                             ringProgress: min(1.0, Double(entry.snapshot.selectedItemCount) / 10.0),
                             style: .neutral
                         )
@@ -312,21 +312,21 @@ private struct LifeformWidgetEntryView: View {
     private var strainDescriptor: String {
         switch entry.snapshot.digitalPenalty {
         case 0.0..<0.25:
-            return "low"
+            return "ひかえめ"
         case 0.25..<0.6:
-            return "medium"
+            return "ふつう"
         default:
-            return "high"
+            return "つよめ"
         }
     }
 
     private var creatureSummary: String {
         if entry.snapshot.digitalPenalty >= 0.7 {
-            return "Movement helps, but digital strain is pressing in."
+            return "歩くと助かるけど、スマホ負担が少し強めだよ。"
         } else if entry.snapshot.physicalScore >= 0.5 {
-            return "Growmi looks stronger after today’s movement."
+            return "今日の歩きで、Growmiはちょっと元気。"
         } else {
-            return "Quiet growth. Gentle activity keeps it alive."
+            return "Growmiは自然が大好き!"
         }
     }
 }

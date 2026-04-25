@@ -8,6 +8,7 @@
 import DeviceActivity
 import FamilyControls
 import HealthKit
+import Foundation
 import WidgetKit
 import SwiftUI
 
@@ -26,16 +27,29 @@ enum GrowmiTheme {
     static let debugBorder = Color(red: 0.55, green: 0.78, blue: 0.66)
 }
 
+private func localizedAuthorizationStatusText(_ text: String) -> String {
+    switch text {
+    case "Not Determined":
+        return "未確認"
+    case "Denied":
+        return "許可なし"
+    case "Approved":
+        return "許可済み"
+    default:
+        return "不明"
+    }
+}
+
 struct ContentView: View {
     @ObservedObject private var authorizationCenter = AuthorizationCenter.shared
     private let healthStore = HKHealthStore()
 
-    @State private var authorizationMessage = "No authorization request yet."
+    @State private var authorizationMessage = "まだリクエストのお願いはしてないよ"
     @State private var selection = FamilyActivitySelection()
     @State private var isPresented = false
-    @State private var selectionMessage = "No activity selected yet."
+    @State private var selectionMessage = "まだ何も選ばれてないよ"
     @State private var showReport = false
-    @State private var stepCountMessage = "Step count not loaded yet."
+    @State private var stepCountMessage = "歩数はまだ読み込まれてないよ"
 
     var body: some View {
         ZStack {
@@ -65,21 +79,9 @@ struct ContentView: View {
                     authorizationStatusText: authorizationStatusText,
                     physicalLevel: physicalLevel,
                     digitalPenalty: digitalPenalty,
+                    screenTimeHoursAvailable: screenTimeHoursAvailable,
                     physicalTag: physicalTag,
-                    digitalStatusText: digitalStatusText
-                )
-
-                DebugPage(
-                    authorizationStatusText: authorizationStatusText,
-                    authorizationMessage: authorizationMessage,
-                    selectionMessage: selectionMessage,
-                    selectedApps: selection.applicationTokens.count,
-                    selectedCategories: selection.categoryTokens.count,
-                    selectedWebDomains: selection.webDomainTokens.count,
-                    showReport: showReport,
-                    stepCountMessage: stepCountMessage,
-                    isPresented: $isPresented,
-                    selection: $selection,
+                    digitalStatusText: digitalStatusText,
                     requestScreenTimeAccess: {
                         Task {
                             await requestScreenTimeAccess()
@@ -96,6 +98,20 @@ struct ContentView: View {
                             await loadTodayStepCount()
                         }
                     },
+                    isPresented: $isPresented,
+                    selection: $selection,
+                    showReport: showReport
+                )
+
+                DebugPage(
+                    authorizationStatusText: authorizationStatusText,
+                    authorizationMessage: authorizationMessage,
+                    selectionMessage: selectionMessage,
+                    selectedApps: selection.applicationTokens.count,
+                    selectedCategories: selection.categoryTokens.count,
+                    selectedWebDomains: selection.webDomainTokens.count,
+                    showReport: showReport,
+                    stepCountMessage: stepCountMessage,
                     reportContext: reportContext,
                     reportFilter: reportFilter
                 )
@@ -103,7 +119,7 @@ struct ContentView: View {
             .tabViewStyle(.page)
         }
         .onChange(of: selection) { _, newSelection in
-            selectionMessage = "Selected \(newSelection.applicationTokens.count) apps, \(newSelection.categoryTokens.count) categories, and \(newSelection.webDomainTokens.count) web domains."
+            selectionMessage = "アプリ \(newSelection.applicationTokens.count) 件、カテゴリ \(newSelection.categoryTokens.count) 件、Web \(newSelection.webDomainTokens.count) 件が選ばれたよ。"
             syncWidgetStateToWidget()
         }
         .onAppear {
@@ -117,6 +133,10 @@ struct ContentView: View {
 
     private var digitalPenalty: Double {
         min(1.0, Double(selectedItemCount) / 10.0)
+    }
+
+    private var screenTimeHoursAvailable: Double {
+        max(0, 24.0 - (digitalPenalty * 10.0))
     }
 
     private var hasScreenTimeSelection: Bool {
@@ -140,24 +160,24 @@ struct ContentView: View {
         let steps = parsedStepCount
 
         if steps >= 10_000 {
-            return "charged"
+            return "元気いっぱい！"
         } else if steps >= 5_000 {
-            return "awake"
+            return "目がさめてる"
         } else if steps > 0 {
-            return "growing"
+            return "成長中"
         } else {
-            return "dormant"
+            return "休んでる"
         }
     }
 
     private var digitalStatusText: String {
         switch (isScreenTimeApproved, hasScreenTimeSelection) {
         case (true, true):
-            return "influence active"
+            return "スマホ負担あり"
         case (true, false):
-            return "authorized, unselected"
+            return "許可だけ済み"
         default:
-            return "screen time locked"
+            return "スクリーンタイム未許可"
         }
     }
 
@@ -178,10 +198,10 @@ struct ContentView: View {
     private func requestScreenTimeAccess() async {
         do {
             try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-            authorizationMessage = "Authorization request completed."
+            authorizationMessage = "許可のお願いが完了したよ"
             syncWidgetStateToWidget()
         } catch {
-            authorizationMessage = "Authorization failed: \(error.localizedDescription)"
+            authorizationMessage = "許可に失敗したよ: \(error.localizedDescription)"
             syncWidgetStateToWidget()
         }
     }
@@ -189,7 +209,7 @@ struct ContentView: View {
     @MainActor
     private func loadTodayStepCount() async {
         guard HKHealthStore.isHealthDataAvailable() else {
-            stepCountMessage = "Health data is not available on this device."
+            stepCountMessage = "この端末ではヘルスケアデータを使えないよ"
             return
         }
 
@@ -209,10 +229,10 @@ struct ContentView: View {
                 .sumQuantity()?
                 .doubleValue(for: .count()) ?? 0
 
-            stepCountMessage = "\(Int(stepCount)) steps today"
+            stepCountMessage = "今日の歩数は \(Int(stepCount)) 歩だよ"
             syncWidgetStateToWidget()
         } catch {
-            stepCountMessage = "Failed to load steps: \(error.localizedDescription)"
+            stepCountMessage = "歩数の読み込みに失敗したよ: \(error.localizedDescription)"
             syncWidgetStateToWidget()
         }
     }
@@ -284,7 +304,7 @@ private struct CreaturePage: View {
             VStack(spacing: 16) {
                 PageHeader(
                     title: "Growmi",
-                    subtitle: "Soft creature, quiet habits, visible state."
+                    subtitle: "自然大好き。"
                 )
 
                 CreatureCard(
@@ -318,8 +338,16 @@ private struct MetricsPage: View {
     let authorizationStatusText: String
     let physicalLevel: Double
     let digitalPenalty: Double
+    let screenTimeHoursAvailable: Double
     let physicalTag: String
     let digitalStatusText: String
+    let requestScreenTimeAccess: () -> Void
+    let openFamilyActivityPicker: () -> Void
+    let toggleReport: () -> Void
+    let loadTodaySteps: () -> Void
+    @Binding var isPresented: Bool
+    @Binding var selection: FamilyActivitySelection
+    let showReport: Bool
 
     private var progressValue: Double {
         min(Double(stepCount) / 10_000.0, 1.0)
@@ -329,28 +357,42 @@ private struct MetricsPage: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
                 PageHeader(
-                    title: "Today's Growth",
-                    subtitle: "Movement feeds Growmi. Excess screen time strains it."
+                    title: "今日のようす",
+                    subtitle: "歩くほど元気になるよ！スマホを使いすぎると少し疲れるよ。"
                 )
 
                 HStack(alignment: .top, spacing: 12) {
                     PhysicalGrowthCard(progressValue: progressValue, stepCount: stepCount)
                         .border(GrowmiTheme.debugBorder, width: 1)
 
-                    DigitalStrainCard(digitalPenalty: digitalPenalty)
+                    DigitalStrainCard(
+                        digitalPenalty: digitalPenalty,
+                        screenTimeHoursAvailable: screenTimeHoursAvailable
+                    )
                         .border(GrowmiTheme.debugBorder, width: 1)
                 }
 
+                ActionPanel(
+                    requestScreenTimeAccess: requestScreenTimeAccess,
+                    openFamilyActivityPicker: openFamilyActivityPicker,
+                    toggleReport: toggleReport,
+                    loadTodaySteps: loadTodaySteps,
+                    isPresented: $isPresented,
+                    selection: $selection,
+                    showReport: showReport
+                )
+                .border(GrowmiTheme.debugBorder, width: 1)
+
                 VStack(alignment: .leading, spacing: 10) {
-                    MetricRow(title: "Steps", value: "\(stepCount)")
-                    MetricRow(title: "Selected Items", value: "\(selectedItemCount)")
-                    MetricRow(title: "Authorization", value: authorizationStatusText)
-                    MetricRow(title: "Physical Tag", value: physicalTag)
-                    MetricRow(title: "Digital Status", value: digitalStatusText)
+                    MetricRow(title: "歩数", value: "\(stepCount)")
+                    MetricRow(title: "選ばれた項目", value: "\(selectedItemCount)")
+                    MetricRow(title: "許可状態", value: localizedAuthorizationStatusText(authorizationStatusText))
+                    MetricRow(title: "フィットネス", value: physicalTag)
+                    MetricRow(title: "SNS疲れ", value: digitalStatusText)
                 }
                 .border(GrowmiTheme.debugBorder, width: 1)
 
-                Text("Movement feeds Growmi. Excess screen time strains it.")
+                Text("歩くほど元気になるよ！スマホを使いすぎると少し疲れるよ。")
                     .font(.system(size: 14, weight: .medium, design: .rounded))
                     .foregroundStyle(GrowmiTheme.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -371,12 +413,6 @@ private struct DebugPage: View {
     let selectedWebDomains: Int
     let showReport: Bool
     let stepCountMessage: String
-    @Binding var isPresented: Bool
-    @Binding var selection: FamilyActivitySelection
-    let requestScreenTimeAccess: () -> Void
-    let openFamilyActivityPicker: () -> Void
-    let toggleReport: () -> Void
-    let loadTodaySteps: () -> Void
     let reportContext: DeviceActivityReport.Context
     let reportFilter: DeviceActivityFilter
 
@@ -384,20 +420,9 @@ private struct DebugPage: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
                 PageHeader(
-                    title: "Debug",
-                    subtitle: "Backend wiring stays visible while you iterate."
+                    title: "デバッグ",
+                    subtitle: "バックエンドの状態を見ながら調整するよ。"
                 )
-
-                ActionPanel(
-                    requestScreenTimeAccess: requestScreenTimeAccess,
-                    openFamilyActivityPicker: openFamilyActivityPicker,
-                    toggleReport: toggleReport,
-                    loadTodaySteps: loadTodaySteps,
-                    isPresented: $isPresented,
-                    selection: $selection,
-                    showReport: showReport
-                )
-                .border(GrowmiTheme.debugBorder, width: 1)
 
                 DebugStatusPanel(
                     authorizationStatusText: authorizationStatusText,
@@ -460,9 +485,9 @@ private struct SummaryStrip: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            MetricChip(title: "Steps", value: "\(stepCount)")
-            MetricChip(title: "Selection", value: "\(selectedItemCount)")
-            MetricChip(title: "Auth", value: authorizationStatusText)
+            MetricChip(title: "歩数", value: "\(stepCount)")
+            MetricChip(title: "選択", value: "\(selectedItemCount)")
+            MetricChip(title: "状態", value: localizedAuthorizationStatusText(authorizationStatusText))
         }
     }
 }
@@ -519,7 +544,7 @@ private struct CreatureCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Specimen Growmi")
+                Text("Growmiのようす")
                     .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundStyle(GrowmiTheme.textPrimary)
 
@@ -636,9 +661,9 @@ private struct CreatureCard: View {
                     .clipped()
 
                     HStack(spacing: 10) {
-                        MetricChip(title: "Steps", value: "\(stepCount)")
-                        MetricChip(title: "Selection", value: "\(selectedItemCount)")
-                        MetricChip(title: "Auth", value: authorizationStatusText)
+                        MetricChip(title: "歩数", value: "\(stepCount)")
+                        MetricChip(title: "選択", value: "\(selectedItemCount)")
+                        MetricChip(title: "状態", value: localizedAuthorizationStatusText(authorizationStatusText))
                     }
                 }
                 .padding(16)
@@ -677,15 +702,15 @@ private struct CreatureCard: View {
     private var moodText: String {
         switch (stepCount, digitalPenalty) {
         case (10_000..., ..<0.3):
-            return "charged / blooming"
+            return "元気いっぱい / ぴかぴか"
         case (5_000..<10_000, ..<0.5):
-            return "growing / steady"
+            return "成長中 / いい感じ"
         case (_, 0.5...):
-            return "strained / noisy"
+            return "ちょっと疲れ気味 / ざわざわ"
         case (1..<5_000, _):
-            return "growing / soft"
+            return "成長中 / やわらか"
         default:
-            return "dormant / resting"
+            return "休んでる / ひとやすみ"
         }
     }
 }
@@ -707,12 +732,12 @@ private struct PhysicalGrowthCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("Physical Growth")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(GrowmiTheme.textPrimary)
-                Spacer()
-            }
+//            HStack {
+//                Text("")
+//                    .font(.system(size: 18, weight: .bold, design: .rounded))
+//                    .foregroundStyle(GrowmiTheme.textPrimary)
+//                Spacer()
+//            }
 
             ZStack {
                 Circle()
@@ -741,7 +766,7 @@ private struct PhysicalGrowthCard: View {
             .frame(width: 120, height: 120)
             .frame(maxWidth: .infinity)
 
-            Text("\(stepCount) steps today")
+            Text("今日の歩数 \(stepCount) 歩")
                 .font(.system(size: 13, weight: .medium, design: .rounded))
                 .foregroundStyle(GrowmiTheme.textSecondary)
         }
@@ -758,23 +783,24 @@ private struct PhysicalGrowthCard: View {
 
 private struct DigitalStrainCard: View {
     let digitalPenalty: Double
+    let screenTimeHoursAvailable: Double
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("Digital Strain")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(GrowmiTheme.textPrimary)
-                Spacer()
-            }
+//            HStack {
+//                Text("")
+//                    .font(.system(size: 18, weight: .bold, design: .rounded))
+//                    .foregroundStyle(GrowmiTheme.textPrimary)
+//                Spacer()
+//            }
 
             ZStack {
                 Circle()
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.98, green: 0.92, blue: 0.88),
-                                Color(red: 0.96, green: 0.84, blue: 0.78)
+                                ringTopColor,
+                                ringBottomColor
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -782,25 +808,29 @@ private struct DigitalStrainCard: View {
                     )
                     .overlay(
                         Circle()
-                            .stroke(Color.orange.opacity(0.35), lineWidth: 1)
+                            .stroke(Color.red.opacity(0.38), lineWidth: 1)
                     )
 
                 Circle()
-                    .stroke(Color.red.opacity(0.18), lineWidth: 8)
+                    .stroke(Color.red.opacity(0.28), lineWidth: 8)
                     .padding(10)
 
                 ForEach(0..<3, id: \.self) { index in
-                    DamageMark(color: .red.opacity(0.55), length: 34 - CGFloat(index) * 6)
+                    DamageMark(color: .red.opacity(0.75), length: 34 - CGFloat(index) * 6)
                         .rotationEffect(.degrees(Double(index) * 28 - 18))
                         .offset(x: CGFloat(index - 1) * 10, y: CGFloat(index) * 2 - 4)
                 }
 
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(Color.red.opacity(0.75))
+                    .foregroundStyle(Color.red.opacity(0.88))
             }
             .frame(width: 120, height: 120)
             .frame(maxWidth: .infinity)
+
+            Text(hoursLabel)
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundStyle(GrowmiTheme.textPrimary)
 
             Text(strainText)
                 .font(.system(size: 13, weight: .medium, design: .rounded))
@@ -819,11 +849,45 @@ private struct DigitalStrainCard: View {
 
     private var strainText: String {
         if digitalPenalty > 0.7 {
-            return "Excess screen time strains it heavily."
+            return "スマホの使いすぎで、かなり疲れ気味。"
         } else if digitalPenalty > 0.3 {
-            return "Restricted app selection adds visible strain."
+            return "選ばれたアプリが増えると、少し負担が出るよ。"
         } else {
-            return "Low strain. Growmi stays calm."
+            return "負担は少なめ。Growmiは落ち着いてるよ。"
+        }
+    }
+
+    private var hoursLabel: String {
+        String(format: "今日使ったスマホ時間 %.1f時間", max(0, 24.0 - screenTimeHoursAvailable))
+    }
+
+    private var warningColor: Color {
+        if screenTimeHoursAvailable <= 4 {
+            return Color.red.opacity(0.88)
+        } else if screenTimeHoursAvailable <= 10 {
+            return Color.red.opacity(0.82)
+        } else {
+            return Color(red: 0.82, green: 0.30, blue: 0.28)
+        }
+    }
+
+    private var ringTopColor: Color {
+        if screenTimeHoursAvailable <= 4 {
+            return Color(red: 0.98, green: 0.82, blue: 0.82)
+        } else if screenTimeHoursAvailable <= 10 {
+            return Color(red: 0.97, green: 0.76, blue: 0.75)
+        } else {
+            return Color(red: 0.94, green: 0.87, blue: 0.86)
+        }
+    }
+
+    private var ringBottomColor: Color {
+        if screenTimeHoursAvailable <= 4 {
+            return Color(red: 0.90, green: 0.36, blue: 0.34)
+        } else if screenTimeHoursAvailable <= 10 {
+            return Color(red: 0.88, green: 0.42, blue: 0.38)
+        } else {
+            return Color(red: 0.80, green: 0.46, blue: 0.42)
         }
     }
 }
@@ -839,20 +903,20 @@ private struct ActionPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Actions")
+            Text("操作")
                 .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundStyle(GrowmiTheme.textPrimary)
 
             VStack(alignment: .leading, spacing: 10) {
                 Button(action: requestScreenTimeAccess) {
-                    Label("Request Screen Time Access", systemImage: "checkmark.shield")
+                    Label("スクリーンタイムの使用をリクエスト", systemImage: "checkmark.shield")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(GrowmiTheme.primaryGreen)
 
                 Button(action: openFamilyActivityPicker) {
-                    Label("Open Family Activity Picker", systemImage: "square.grid.2x2")
+                    Label("アプリをえらぶ", systemImage: "square.grid.2x2")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.bordered)
@@ -860,14 +924,14 @@ private struct ActionPanel: View {
                 .familyActivityPicker(isPresented: $isPresented, selection: $selection)
 
                 Button(action: toggleReport) {
-                    Label(showReport ? "Hide Report" : "Toggle Report", systemImage: showReport ? "eye.slash" : "chart.bar.doc.horizontal")
+                    Label(showReport ? "レポートを隠す" : "レポートを切り替え", systemImage: showReport ? "eye.slash" : "chart.bar.doc.horizontal")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.bordered)
                 .tint(GrowmiTheme.primaryGreen)
 
                 Button(action: loadTodaySteps) {
-                    Label("Load Today's Steps", systemImage: "figure.walk")
+                    Label("運動データを読み込む", systemImage: "figure.walk")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.borderedProminent)
@@ -897,19 +961,19 @@ private struct DebugStatusPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Debug State")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
-                .foregroundStyle(GrowmiTheme.textPrimary)
+                Text("状態")
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundStyle(GrowmiTheme.textPrimary)
 
             VStack(alignment: .leading, spacing: 10) {
-                MetricRow(title: "Authorization Status", value: authorizationStatusText)
-                MetricRow(title: "Authorization Message", value: authorizationMessage)
-                MetricRow(title: "Selection Message", value: selectionMessage)
-                MetricRow(title: "Selected Apps", value: "\(selectedApps)")
-                MetricRow(title: "Selected Categories", value: "\(selectedCategories)")
-                MetricRow(title: "Selected Web Domains", value: "\(selectedWebDomains)")
-                MetricRow(title: "Show Report", value: showReport ? "Enabled" : "Hidden")
-                MetricRow(title: "Step Count Message", value: stepCountMessage)
+                MetricRow(title: "許可状態", value: localizedAuthorizationStatusText(authorizationStatusText))
+                MetricRow(title: "許可メッセージ", value: authorizationMessage)
+                MetricRow(title: "選択メッセージ", value: selectionMessage)
+                MetricRow(title: "選ばれたアプリ", value: "\(selectedApps)")
+                MetricRow(title: "選ばれたカテゴリ", value: "\(selectedCategories)")
+                MetricRow(title: "選ばれたWeb", value: "\(selectedWebDomains)")
+                MetricRow(title: "レポート表示", value: showReport ? "表示中" : "非表示")
+                MetricRow(title: "歩数メッセージ", value: stepCountMessage)
             }
         }
         .padding(18)
@@ -932,15 +996,15 @@ private struct ReportSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Report")
+            Text("レポート")
                 .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundStyle(GrowmiTheme.textPrimary)
 
-            MetricRow(title: "Authorization", value: authorizationStatusText)
-            MetricRow(title: "Selection", value: selectionMessage)
-            MetricRow(title: "Physical", value: physicalTag)
+            MetricRow(title: "許可", value: localizedAuthorizationStatusText(authorizationStatusText))
+            MetricRow(title: "選択", value: selectionMessage)
+            MetricRow(title: "体の状態", value: physicalTag)
 
-            Text("Report Context: summary")
+            Text("レポートの種類：サマリー")
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundStyle(GrowmiTheme.textSecondary)
 
