@@ -279,7 +279,11 @@ private struct LifeformWidgetEntryView: View {
                     path.move(to: CGPoint(x: horizontalStartX, y: secondHorizontalY))
                     path.addLine(to: CGPoint(x: horizontalEndX, y: secondHorizontalY))
                 }
-                .stroke(GrowmiWidgetTheme.debugBorder, lineWidth: 1)
+                .stroke(GrowmiWidgetTheme.debugBorder.opacity(0.6), style: StrokeStyle(
+                        lineWidth: 1,
+                        dash: [4, 4]
+                    )
+                )
 
                 MediumScoreCard(snapshot: entry.snapshot)
                     .frame(width: width * 0.20)
