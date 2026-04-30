@@ -329,9 +329,9 @@ private struct LifeformWidgetEntryView: View {
 
                     MediumScoreCard(snapshot: entry.snapshot)
                         .frame(width: geometry.size.width * 0.5)
-                        .offset(x: -10, y: 60)
+                        .offset(x: 0, y: 60)
                         .zIndex(1)
-                        .scaleEffect(1.2)
+                        .scaleEffect(1.4)
 
                     Image("Green")
                         .resizable()
@@ -343,9 +343,9 @@ private struct LifeformWidgetEntryView: View {
                             LinearGradient(
                                 stops: [
                                     .init(color: .clear, location: 0.0),
-                                    .init(color: .white.opacity(0.02), location: 0.08),
-                                    .init(color: .white.opacity(0.12), location: 0.14),
-                                    .init(color: .white.opacity(0.90), location: 0.22),
+                                    .init(color: .white.opacity(0.0), location: 0.12),
+                                    .init(color: .white.opacity(0.08), location: 0.20),
+                                    .init(color: .white.opacity(0.72), location: 0.34),
                                     .init(color: .white, location: 1.0)
                                 ],
                                 startPoint: .leading,
@@ -356,14 +356,14 @@ private struct LifeformWidgetEntryView: View {
                             LinearGradient(
                                 stops: [
                                     .init(color: GrowmiWidgetTheme.backgroundBase, location: 0.0),
-                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.98), location: 0.30),
-                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.65), location: 0.62),
+                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(1.0), location: 0.52),
+                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.88), location: 0.74),
                                     .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.0), location: 1.0)
                                 ],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
-                            .frame(width: geometry.size.width * 0.14)
+                            .frame(width: geometry.size.width * 0.34)
                         }
                         .overlay(alignment: .bottom) {
                             LinearGradient(
@@ -378,13 +378,28 @@ private struct LifeformWidgetEntryView: View {
                             )
                             .frame(height: geometry.size.height * 0.055)
                         }
+
+                    LinearGradient(
+                        stops: [
+                            .init(color: GrowmiWidgetTheme.backgroundBase, location: 0.0),
+                            .init(color: GrowmiWidgetTheme.backgroundBase.opacity(1.0), location: 0.52),
+                            .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.62), location: 0.80),
+                            .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.0), location: 1.0)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: geometry.size.width * 0.23, height: geometry.size.height * 0.62)
+                    .offset(x: geometry.size.width * 0.27, y: geometry.size.height * 0.08)
+                    .zIndex(0.5)
+                    .allowsHitTesting(false)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 LazyVGrid(
                     columns: [
-                        GridItem(.fixed(176), spacing: 0),
-                        GridItem(.fixed(176), spacing: 0)
+                        GridItem(.flexible(), spacing: geometry.size.width * 0.03),
+                        GridItem(.flexible(), spacing: geometry.size.width * 0.03)
                     ],
                     spacing: 6
                 ) {
@@ -428,7 +443,7 @@ private struct LifeformWidgetEntryView: View {
                         )
                     }
                 }
-                .frame(width: 296)
+                .frame(maxWidth: geometry.size.width * 0.88)
                 .offset(y: -15)
             }
         }
@@ -768,13 +783,13 @@ private struct MediumScoreCard: View {
 
             HStack(spacing: 5) {
                 Image(systemName: "leaf.fill")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 9, weight: .semibold))
                 Text("のんびり")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
             }
             .foregroundStyle(GrowmiWidgetTheme.primaryGreen)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
             .background(
                 Capsule(style: .continuous)
                     .fill(GrowmiWidgetTheme.primaryGreen.opacity(0.12))
@@ -796,7 +811,7 @@ private struct LargePillCard<Content: View>: View {
         content
             .padding(.horizontal, 20)
             .padding(.vertical, 5)
-            .frame(width: 170, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .frame(minHeight: 50, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
