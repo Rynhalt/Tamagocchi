@@ -15,6 +15,25 @@ import SwiftUI
 private let lifeformAppGroupID = "group.com.marcus.Growmi"
 private let lifeformWidgetStateKey = "LifeformWidgetState"
 
+enum CharacterKind: String, CaseIterable, Codable, Identifiable {
+    case green
+    case blue
+    case red
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .green:
+            return "Green"
+        case .blue:
+            return "Blue"
+        case .red:
+            return "Red"
+        }
+    }
+}
+
 enum GrowmiTheme {
     static let backgroundTop = Color(red: 0.97, green: 0.96, blue: 0.92)
     static let backgroundBottom = Color(red: 0.90, green: 0.95, blue: 0.94)
@@ -50,6 +69,7 @@ struct ContentView: View {
     @State private var selectionMessage = "まだ何も選ばれてないよ"
     @State private var showReport = false
     @State private var stepCountMessage = "歩数はまだ読み込まれてないよ"
+    @State private var selectedCharacter: CharacterKind = .green
 
     var body: some View {
         ZStack {
@@ -112,6 +132,7 @@ struct ContentView: View {
                     selectedWebDomains: selection.webDomainTokens.count,
                     showReport: showReport,
                     stepCountMessage: stepCountMessage,
+                    selectedCharacter: $selectedCharacter,
                     reportContext: reportContext,
                     reportFilter: reportFilter
                 )
@@ -120,6 +141,9 @@ struct ContentView: View {
         }
         .onChange(of: selection) { _, newSelection in
             selectionMessage = "アプリ \(newSelection.applicationTokens.count) 件、カテゴリ \(newSelection.categoryTokens.count) 件、Web \(newSelection.webDomainTokens.count) 件が選ばれたよ。"
+            syncWidgetStateToWidget()
+        }
+        .onChange(of: selectedCharacter) { _, _ in
             syncWidgetStateToWidget()
         }
         .onAppear {
@@ -264,7 +288,8 @@ struct ContentView: View {
             selectedCategories: selection.categoryTokens.count,
             selectedWebDomains: selection.webDomainTokens.count,
             stepCount: parsedStepCount,
-            showReport: showReport
+            showReport: showReport,
+            selectedCharacter: selectedCharacter
         )
 
         guard let defaults = UserDefaults(suiteName: lifeformAppGroupID),
@@ -286,6 +311,7 @@ private struct LifeformWidgetStateSnapshot: Codable {
     let selectedWebDomains: Int
     let stepCount: Int
     let showReport: Bool
+    let selectedCharacter: CharacterKind
 }
 
 private struct CreaturePage: View {
@@ -413,6 +439,7 @@ private struct DebugPage: View {
     let selectedWebDomains: Int
     let showReport: Bool
     let stepCountMessage: String
+    @Binding var selectedCharacter: CharacterKind
     let reportContext: DeviceActivityReport.Context
     let reportFilter: DeviceActivityFilter
 
@@ -436,6 +463,9 @@ private struct DebugPage: View {
                 )
                 .border(GrowmiTheme.debugBorder, width: 1)
 
+                CharacterSelectionPanel(selectedCharacter: $selectedCharacter)
+                    .border(GrowmiTheme.debugBorder, width: 1)
+
                 if showReport {
                     ReportSection(
                         authorizationStatusText: authorizationStatusText,
@@ -450,6 +480,37 @@ private struct DebugPage: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 24)
         }
+    }
+}
+
+private struct CharacterSelectionPanel: View {
+    @Binding var selectedCharacter: CharacterKind
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("キャラクター選択")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundStyle(GrowmiTheme.textPrimary)
+
+            Text("デバッグ用に、表示したいキャラクターをここで切り替えるよ。")
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundStyle(GrowmiTheme.textSecondary)
+
+            Picker("キャラクター", selection: $selectedCharacter) {
+                ForEach(CharacterKind.allCases) { character in
+                    Text(character.displayName).tag(character)
+                }
+            }
+            .pickerStyle(.segmented)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(GrowmiTheme.card)
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(GrowmiTheme.debugBorder.opacity(0.8), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
 

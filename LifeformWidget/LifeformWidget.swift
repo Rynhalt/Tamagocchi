@@ -26,6 +26,12 @@ private enum GrowmiWidgetTheme {
 private let lifeformAppGroupID = "group.com.marcus.Growmi"
 private let lifeformWidgetStateKey = "LifeformWidgetState"
 
+enum CharacterKind: String, Codable {
+    case green
+    case blue
+    case red
+}
+
 struct LifeformWidgetStateSnapshot: Codable, Hashable {
     let authorizationStatusText: String
     let authorizationMessage: String
@@ -35,6 +41,7 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
     let selectedWebDomains: Int
     let stepCount: Int
     let showReport: Bool
+    let selectedCharacter: CharacterKind
 
     static let placeholder = LifeformWidgetStateSnapshot(
         authorizationStatusText: "未確認",
@@ -44,7 +51,8 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
         selectedCategories: 0,
         selectedWebDomains: 0,
         stepCount: 0,
-        showReport: false
+        showReport: false,
+        selectedCharacter: .green
     )
 
     var selectedItemCount: Int {
@@ -96,6 +104,13 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
         let score = (physicalScore * 70.0) + ((1.0 - digitalPenalty) * 30.0)
         return Int(max(0, min(100, score)).rounded())
     }
+}
+
+private struct CharacterPalette {
+    let backgroundColors: [Color]
+    let backgroundBase: Color
+    let lineColor: Color
+    let accentColor: Color
 }
 
 private struct LifeformWidgetEntry: TimelineEntry {
@@ -175,7 +190,61 @@ private struct LifeformWidgetEntryView: View {
     }
 
     private var backgroundLayer: some View {
-        GrowmiWidgetTheme.background
+        LinearGradient(
+            colors: palette.backgroundColors,
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private var currentCharacter: CharacterKind {
+        entry.snapshot.selectedCharacter
+    }
+
+    private var characterImageName: String {
+        switch currentCharacter {
+        case .green:
+            return "Green"
+        case .blue:
+            return "Blue"
+        case .red:
+            return "Red"
+        }
+    }
+
+    private var palette: CharacterPalette {
+        switch currentCharacter {
+        case .green:
+            return CharacterPalette(
+                backgroundColors: [
+                    Color(red: 0.972, green: 0.931, blue: 0.905),
+                    Color(red: 0.952, green: 0.954, blue: 0.908)
+                ],
+                backgroundBase: Color(red: 0.972, green: 0.931, blue: 0.905),
+                lineColor: Color(red: 0.55, green: 0.78, blue: 0.66),
+                accentColor: GrowmiWidgetTheme.primaryGreen
+            )
+        case .blue:
+            return CharacterPalette(
+                backgroundColors: [
+                    Color(red: 0.836, green: 0.900, blue: 0.943),
+                    Color(red: 0.804, green: 0.878, blue: 0.931)
+                ],
+                backgroundBase: Color(red: 0.836, green: 0.900, blue: 0.943),
+                lineColor: Color(red: 0.42, green: 0.65, blue: 0.87),
+                accentColor: Color(red: 0.34, green: 0.62, blue: 0.92)
+            )
+        case .red:
+            return CharacterPalette(
+                backgroundColors: [
+                    Color(red: 0.982, green: 0.852, blue: 0.730),
+                    Color(red: 0.973, green: 0.816, blue: 0.682)
+                ],
+                backgroundBase: Color(red: 0.982, green: 0.852, blue: 0.730),
+                lineColor: Color(red: 0.88, green: 0.54, blue: 0.66),
+                accentColor: Color(red: 0.93, green: 0.55, blue: 0.72)
+            )
+        }
     }
 
     private var cardBackground: some View {
@@ -189,37 +258,21 @@ private struct LifeformWidgetEntryView: View {
     }
 
     private var smallLayout: some View {
-        VStack(spacing: 10) {
-            Text("Growmi")
-                .font(.system(size: 16, weight: .bold, design: .rounded))
-                .foregroundStyle(GrowmiWidgetTheme.textPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            ZStack {
-                cardBackground
-
-                VStack(spacing: 8) {
-                    GrowmiCreatureView(snapshot: entry.snapshot, sizeMode: .compact)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                    HStack(spacing: 6) {
-                        Image(systemName: entry.snapshot.digitalPenalty >= 0.6 ? "leaf.slash" : "leaf.fill")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(entry.snapshot.digitalPenalty >= 0.6 ? GrowmiWidgetTheme.warningRed : GrowmiWidgetTheme.leafGreen)
-
-                        Text(entry.snapshot.moodText)
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
-                            .foregroundStyle(GrowmiWidgetTheme.textPrimary)
-                    }
-                }
-                .padding(14)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .padding(12)
+        Image(characterImageName)
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
     }
 
     private var mediumLayout: some View {
+        greenMediumLayout
+    }
+
+    private var largeLayout: some View {
+        greenLargeLayout
+    }
+
+    private var greenMediumLayout: some View {
         GeometryReader { geometry in
             let width = geometry.size.width
             let height = geometry.size.height
@@ -228,7 +281,7 @@ private struct LifeformWidgetEntryView: View {
                 HStack {
                     Spacer()
 
-                    Image("Green")
+                    Image(characterImageName)
                         .resizable()
                         .scaledToFit()
                         .frame(width: width * 0.5, height: height)
@@ -249,15 +302,15 @@ private struct LifeformWidgetEntryView: View {
                         .overlay(alignment: .leading) {
                             LinearGradient(
                                 stops: [
-                                    .init(color: GrowmiWidgetTheme.backgroundBase, location: 0.0),
-                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.98), location: 0.30),
-                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.65), location: 0.62),
-                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.0), location: 1.0)
+                                    .init(color: palette.backgroundBase, location: 0.0),
+                                    .init(color: palette.backgroundBase.opacity(0.98), location: 0.30),
+                                    .init(color: palette.backgroundBase.opacity(0.65), location: 0.62),
+                                    .init(color: palette.backgroundBase.opacity(0.0), location: 1.0)
                                 ],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
-                            .frame(width: width * 0.14)
+                            .frame(width: width * 0.08)
                         }
                 }
 
@@ -279,13 +332,17 @@ private struct LifeformWidgetEntryView: View {
                     path.move(to: CGPoint(x: horizontalStartX, y: secondHorizontalY))
                     path.addLine(to: CGPoint(x: horizontalEndX, y: secondHorizontalY))
                 }
-                .stroke(GrowmiWidgetTheme.debugBorder.opacity(0.6), style: StrokeStyle(
+                .stroke(palette.lineColor.opacity(0.6), style: StrokeStyle(
                         lineWidth: 1,
                         dash: [4, 4]
                     )
                 )
 
-                MediumScoreCard(snapshot: entry.snapshot)
+                MediumScoreCard(
+                    snapshot: entry.snapshot,
+                    accentColor: palette.accentColor,
+                    borderColor: palette.lineColor
+                )
                     .frame(width: width * 0.20)
                     .offset(x: -(width * 0.32), y: 5)
 
@@ -321,19 +378,23 @@ private struct LifeformWidgetEntryView: View {
         }
     }
 
-    private var largeLayout: some View {
+    private var greenLargeLayout: some View {
         GeometryReader { geometry in
             VStack(spacing: 6) {
                 ZStack(alignment: .topLeading) {
                     Color.clear
 
-                    MediumScoreCard(snapshot: entry.snapshot)
+                    MediumScoreCard(
+                        snapshot: entry.snapshot,
+                        accentColor: palette.accentColor,
+                        borderColor: palette.lineColor
+                    )
                         .frame(width: geometry.size.width * 0.5)
                         .offset(x: 0, y: 60)
                         .zIndex(1)
                         .scaleEffect(1.4)
 
-                    Image("Green")
+                    Image(characterImageName)
                         .resizable()
                         .scaledToFit()
                         .frame(width: geometry.size.width * 0.75)
@@ -355,23 +416,23 @@ private struct LifeformWidgetEntryView: View {
                         .overlay(alignment: .leading) {
                             LinearGradient(
                                 stops: [
-                                    .init(color: GrowmiWidgetTheme.backgroundBase, location: 0.0),
-                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(1.0), location: 0.52),
-                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.88), location: 0.74),
-                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.0), location: 1.0)
+                                    .init(color: palette.backgroundBase, location: 0.0),
+                                    .init(color: palette.backgroundBase.opacity(1.0), location: 0.52),
+                                    .init(color: palette.backgroundBase.opacity(0.88), location: 0.74),
+                                    .init(color: palette.backgroundBase.opacity(0.0), location: 1.0)
                                 ],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
-                            .frame(width: geometry.size.width * 0.34)
+                            .frame(width: geometry.size.width * 0.22)
                         }
                         .overlay(alignment: .bottom) {
                             LinearGradient(
                                 stops: [
-                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.0), location: 0.0),
-                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.16), location: 0.78),
-                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.50), location: 0.93),
-                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.76), location: 1.0)
+                                    .init(color: palette.backgroundBase.opacity(0.0), location: 0.0),
+                                    .init(color: palette.backgroundBase.opacity(0.16), location: 0.78),
+                                    .init(color: palette.backgroundBase.opacity(0.50), location: 0.93),
+                                    .init(color: palette.backgroundBase.opacity(0.76), location: 1.0)
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
@@ -381,10 +442,10 @@ private struct LifeformWidgetEntryView: View {
 
                     LinearGradient(
                         stops: [
-                            .init(color: GrowmiWidgetTheme.backgroundBase, location: 0.0),
-                            .init(color: GrowmiWidgetTheme.backgroundBase.opacity(1.0), location: 0.52),
-                            .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.62), location: 0.80),
-                            .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.0), location: 1.0)
+                            .init(color: palette.backgroundBase, location: 0.0),
+                            .init(color: palette.backgroundBase.opacity(1.0), location: 0.52),
+                            .init(color: palette.backgroundBase.opacity(0.62), location: 0.80),
+                            .init(color: palette.backgroundBase.opacity(0.0), location: 1.0)
                         ],
                         startPoint: .leading,
                         endPoint: .trailing
@@ -403,7 +464,7 @@ private struct LifeformWidgetEntryView: View {
                     ],
                     spacing: 6
                 ) {
-                    LargePillCard {
+                    LargePillCard(borderColor: palette.lineColor, fillColor: palette.backgroundBase) {
                         MediumStatRow(
                             iconName: "figure.walk",
                             iconColor: GrowmiWidgetTheme.primaryGreen,
@@ -413,7 +474,7 @@ private struct LifeformWidgetEntryView: View {
                         )
                     }
 
-                    LargePillCard {
+                    LargePillCard(borderColor: palette.lineColor, fillColor: palette.backgroundBase) {
                         MediumStatRow(
                             iconName: "clock",
                             iconColor: GrowmiWidgetTheme.warmOrange,
@@ -423,7 +484,7 @@ private struct LifeformWidgetEntryView: View {
                         )
                     }
 
-                    LargePillCard {
+                    LargePillCard(borderColor: palette.lineColor, fillColor: palette.backgroundBase) {
                         MediumStatRow(
                             iconName: "heart.fill",
                             iconColor: Color(red: 0.93, green: 0.55, blue: 0.72),
@@ -433,7 +494,7 @@ private struct LifeformWidgetEntryView: View {
                         )
                     }
 
-                    LargePillCard {
+                    LargePillCard(borderColor: palette.lineColor, fillColor: palette.backgroundBase) {
                         MediumStatRow(
                             iconName: "shoeprints.fill",
                             iconColor: Color(red: 0.31, green: 0.58, blue: 0.96),
@@ -447,6 +508,272 @@ private struct LifeformWidgetEntryView: View {
                 .offset(y: -15)
             }
         }
+    }
+
+    private var blueSmallLayout: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .fill(Color.white.opacity(0.28))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 30, style: .continuous)
+                        .stroke(Color.white.opacity(0.34), lineWidth: 1)
+                )
+                .padding(14)
+
+            VStack(spacing: 8) {
+                Text("Blue")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(red: 0.20, green: 0.39, blue: 0.58))
+
+                GrowmiCreatureView(snapshot: entry.snapshot, sizeMode: .compact, characterKind: .blue)
+
+                Text(entry.snapshot.moodText)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(GrowmiWidgetTheme.textSecondary)
+            }
+            .padding(.vertical, 12)
+        }
+    }
+
+    private var redSmallLayout: some View {
+        ZStack {
+            Circle()
+                .fill(Color.white.opacity(0.24))
+                .frame(width: 128, height: 128)
+                .blur(radius: 2)
+
+            VStack(spacing: 6) {
+                HStack(spacing: 5) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("Red")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                }
+                .foregroundStyle(Color(red: 0.71, green: 0.28, blue: 0.46))
+
+                GrowmiCreatureView(snapshot: entry.snapshot, sizeMode: .compact, characterKind: .red)
+                    .scaleEffect(0.95)
+
+                Capsule()
+                    .fill(Color.white.opacity(0.62))
+                    .frame(width: 72, height: 22)
+                    .overlay {
+                        Text("\(entry.snapshot.overallScore)%")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color(red: 0.71, green: 0.28, blue: 0.46))
+                    }
+            }
+            .padding(.vertical, 10)
+        }
+    }
+
+    private var blueMediumLayout: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Blue")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(red: 0.20, green: 0.39, blue: 0.58))
+
+                MetricCard(
+                    title: "歩数",
+                    value: "\(entry.snapshot.stepCount.formatted())歩",
+                    detail: entry.snapshot.physicalTag,
+                    ringProgress: entry.snapshot.physicalScore,
+                    style: .growth
+                )
+
+                MetricCard(
+                    title: "SNS負担",
+                    value: strainDescriptor,
+                    detail: creatureSummary,
+                    ringProgress: 1.0 - entry.snapshot.digitalPenalty,
+                    style: .neutral
+                )
+            }
+
+            ZStack {
+                RoundedRectangle(cornerRadius: 36, style: .continuous)
+                    .fill(Color.white.opacity(0.24))
+                GrowmiCreatureView(snapshot: entry.snapshot, sizeMode: .medium, characterKind: .blue)
+                    .offset(y: -4)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .padding(16)
+    }
+
+    private var redMediumLayout: some View {
+        VStack(spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Red")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.71, green: 0.28, blue: 0.46))
+                    Text("きょうのごきげん")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(GrowmiWidgetTheme.textSecondary)
+                }
+                Spacer()
+                Capsule()
+                    .fill(Color.white.opacity(0.58))
+                    .frame(width: 64, height: 28)
+                    .overlay {
+                        Text("\(entry.snapshot.overallScore)")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color(red: 0.71, green: 0.28, blue: 0.46))
+                    }
+            }
+
+            HStack(spacing: 10) {
+                GrowmiCreatureView(snapshot: entry.snapshot, sizeMode: .medium, characterKind: .red)
+                    .frame(width: 118, height: 118)
+
+                VStack(spacing: 8) {
+                    MetricCard(
+                        title: "歩数",
+                        value: "\(entry.snapshot.stepCount.formatted())歩",
+                        detail: "移動距離 \(estimatedDistanceKilometers.formatted(.number.precision(.fractionLength(1))))km",
+                        ringProgress: entry.snapshot.physicalScore,
+                        style: .growth
+                    )
+
+                    MetricCard(
+                        title: "ムード",
+                        value: entry.snapshot.moodText,
+                        detail: entry.snapshot.digitalStatusText,
+                        ringProgress: 1.0 - (entry.snapshot.digitalPenalty * 0.6),
+                        style: .strain
+                    )
+                }
+            }
+        }
+        .padding(16)
+    }
+
+    private var blueLargeLayout: some View {
+        VStack(spacing: 10) {
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Blue")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.20, green: 0.39, blue: 0.58))
+                    Text("クールに成長を追うタイプ")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(GrowmiWidgetTheme.textSecondary)
+                }
+                Spacer()
+                MediumScoreCard(snapshot: entry.snapshot)
+                    .frame(width: 92)
+            }
+
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 34, style: .continuous)
+                        .fill(Color.white.opacity(0.24))
+                    GrowmiCreatureView(snapshot: entry.snapshot, sizeMode: .large, characterKind: .blue)
+                        .scaleEffect(1.05)
+                }
+
+                VStack(spacing: 8) {
+                    MetricCard(
+                        title: "歩数",
+                        value: "\(entry.snapshot.stepCount.formatted())歩",
+                        detail: entry.snapshot.physicalTag,
+                        ringProgress: entry.snapshot.physicalScore,
+                        style: .growth
+                    )
+
+                    MetricCard(
+                        title: "デジタル負担",
+                        value: strainDescriptor,
+                        detail: entry.snapshot.digitalStatusText,
+                        ringProgress: 1.0 - entry.snapshot.digitalPenalty,
+                        style: .neutral
+                    )
+
+                    MetricCard(
+                        title: "移動距離",
+                        value: "\(estimatedDistanceKilometers.formatted(.number.precision(.fractionLength(1))))km",
+                        detail: creatureSummary,
+                        ringProgress: min(1.0, estimatedDistanceKilometers / 8.0),
+                        style: .growth
+                    )
+                }
+            }
+        }
+        .padding(16)
+    }
+
+    private var redLargeLayout: some View {
+        VStack(spacing: 10) {
+            HStack {
+                Text("Red")
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(red: 0.71, green: 0.28, blue: 0.46))
+                Spacer()
+                HStack(spacing: 4) {
+                    Image(systemName: "sparkles")
+                    Text(entry.snapshot.moodText)
+                }
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(Color(red: 0.71, green: 0.28, blue: 0.46))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(Color.white.opacity(0.58)))
+            }
+
+            ZStack(alignment: .bottomTrailing) {
+                RoundedRectangle(cornerRadius: 34, style: .continuous)
+                    .fill(Color.white.opacity(0.18))
+
+                GrowmiCreatureView(snapshot: entry.snapshot, sizeMode: .large, characterKind: .red)
+                    .scaleEffect(1.08)
+                    .offset(x: -8, y: -4)
+
+                VStack(spacing: 8) {
+                    LargePillCard {
+                        MediumStatRow(
+                            iconName: "figure.walk",
+                            iconColor: GrowmiWidgetTheme.primaryGreen,
+                            iconSize: 18,
+                            title: "歩数",
+                            value: "\(entry.snapshot.stepCount.formatted())歩"
+                        )
+                    }
+
+                    LargePillCard {
+                        MediumStatRow(
+                            iconName: "heart.fill",
+                            iconColor: Color(red: 0.93, green: 0.55, blue: 0.72),
+                            iconSize: 17,
+                            title: "ムード",
+                            value: entry.snapshot.moodText
+                        )
+                    }
+                }
+                .frame(width: 150)
+                .padding(12)
+            }
+
+            HStack(spacing: 8) {
+                MetricCard(
+                    title: "成長",
+                    value: entry.snapshot.physicalTag,
+                    detail: creatureSummary,
+                    ringProgress: entry.snapshot.physicalScore,
+                    style: .growth
+                )
+
+                MetricCard(
+                    title: "バランス",
+                    value: "\(entry.snapshot.overallScore)",
+                    detail: entry.snapshot.digitalStatusText,
+                    ringProgress: Double(entry.snapshot.overallScore) / 100.0,
+                    style: .strain
+                )
+            }
+        }
+        .padding(16)
     }
 
     private var strainDescriptor: String {
@@ -485,6 +812,7 @@ private enum GrowmiCreatureSizeMode {
 private struct GrowmiCreatureView: View {
     let snapshot: LifeformWidgetStateSnapshot
     let sizeMode: GrowmiCreatureSizeMode
+    let characterKind: CharacterKind
 
     private var physicalScale: CGFloat {
         let base = 0.82 + CGFloat(snapshot.physicalScore) * 0.30
@@ -499,12 +827,31 @@ private struct GrowmiCreatureView: View {
     }
 
     private var creatureColor: Color {
-        if snapshot.digitalPenalty > 0.7 {
-            return Color(red: 0.50, green: 0.73, blue: 0.58)
-        } else if snapshot.digitalPenalty > 0.35 {
-            return Color(red: 0.55, green: 0.80, blue: 0.63)
-        } else {
-            return Color(red: 0.62, green: 0.83, blue: 0.67)
+        switch characterKind {
+        case .green:
+            if snapshot.digitalPenalty > 0.7 {
+                return Color(red: 0.50, green: 0.73, blue: 0.58)
+            } else if snapshot.digitalPenalty > 0.35 {
+                return Color(red: 0.55, green: 0.80, blue: 0.63)
+            } else {
+                return Color(red: 0.62, green: 0.83, blue: 0.67)
+            }
+        case .blue:
+            if snapshot.digitalPenalty > 0.7 {
+                return Color(red: 0.43, green: 0.63, blue: 0.76)
+            } else if snapshot.digitalPenalty > 0.35 {
+                return Color(red: 0.47, green: 0.70, blue: 0.84)
+            } else {
+                return Color(red: 0.59, green: 0.79, blue: 0.91)
+            }
+        case .red:
+            if snapshot.digitalPenalty > 0.7 {
+                return Color(red: 0.77, green: 0.49, blue: 0.61)
+            } else if snapshot.digitalPenalty > 0.35 {
+                return Color(red: 0.88, green: 0.58, blue: 0.70)
+            } else {
+                return Color(red: 0.95, green: 0.69, blue: 0.78)
+            }
         }
     }
 
@@ -513,7 +860,49 @@ private struct GrowmiCreatureView: View {
     }
 
     private var accentColor: Color {
-        snapshot.digitalPenalty >= 0.6 ? GrowmiWidgetTheme.warningRed : GrowmiWidgetTheme.accentGreen
+        if snapshot.digitalPenalty >= 0.6 {
+            return GrowmiWidgetTheme.warningRed
+        }
+
+        switch characterKind {
+        case .green:
+            return GrowmiWidgetTheme.accentGreen
+        case .blue:
+            return Color(red: 0.34, green: 0.62, blue: 0.92)
+        case .red:
+            return Color(red: 0.93, green: 0.55, blue: 0.72)
+        }
+    }
+
+    private var haloColors: [Color] {
+        switch characterKind {
+        case .green:
+            return [
+                Color(red: 0.96, green: 0.99, blue: 0.98).opacity(0.95),
+                Color(red: 0.84, green: 0.94, blue: 0.96).opacity(0.60)
+            ]
+        case .blue:
+            return [
+                Color(red: 0.95, green: 0.98, blue: 1.0).opacity(0.98),
+                Color(red: 0.74, green: 0.88, blue: 0.98).opacity(0.66)
+            ]
+        case .red:
+            return [
+                Color(red: 1.0, green: 0.96, blue: 0.98).opacity(0.98),
+                Color(red: 0.98, green: 0.82, blue: 0.90).opacity(0.70)
+            ]
+        }
+    }
+
+    private var basePlateColor: Color {
+        switch characterKind {
+        case .green:
+            return Color(red: 0.77, green: 0.88, blue: 0.74).opacity(0.20)
+        case .blue:
+            return Color(red: 0.71, green: 0.83, blue: 0.96).opacity(0.24)
+        case .red:
+            return Color(red: 0.96, green: 0.75, blue: 0.84).opacity(0.24)
+        }
     }
 
     private var damageCount: Int {
@@ -531,10 +920,7 @@ private struct GrowmiCreatureView: View {
             Circle()
                 .fill(
                     LinearGradient(
-                        colors: [
-                            Color(red: 0.96, green: 0.99, blue: 0.98).opacity(0.95),
-                            Color(red: 0.84, green: 0.94, blue: 0.96).opacity(0.60)
-                        ],
+                        colors: haloColors,
                         startPoint: .top,
                         endPoint: .bottom
                     )
@@ -546,7 +932,7 @@ private struct GrowmiCreatureView: View {
                 )
 
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color(red: 0.77, green: 0.88, blue: 0.74).opacity(0.20))
+                .fill(basePlateColor)
                 .frame(width: 72, height: 28)
                 .offset(y: 28)
 
@@ -572,7 +958,7 @@ private struct GrowmiCreatureView: View {
 
             if snapshot.physicalScore > 0.45 {
                 Circle()
-                    .fill(GrowmiWidgetTheme.leafGreen.opacity(0.7))
+                    .fill(accentColor.opacity(0.7))
                     .frame(width: 10, height: 10)
                     .offset(x: 14, y: -26)
             }
@@ -735,6 +1121,18 @@ private struct MediumStatRow: View {
 
 private struct MediumScoreCard: View {
     let snapshot: LifeformWidgetStateSnapshot
+    let accentColor: Color
+    let borderColor: Color
+
+    init(
+        snapshot: LifeformWidgetStateSnapshot,
+        accentColor: Color = GrowmiWidgetTheme.primaryGreen,
+        borderColor: Color = GrowmiWidgetTheme.debugBorder
+    ) {
+        self.snapshot = snapshot
+        self.accentColor = accentColor
+        self.borderColor = borderColor
+    }
 
     private var normalizedScore: Double {
         Double(snapshot.overallScore) / 100.0
@@ -750,7 +1148,7 @@ private struct MediumScoreCard: View {
                 .stroke(
                     LinearGradient(
                         colors: [
-                            GrowmiWidgetTheme.primaryGreen,
+                            accentColor,
                             Color(red: 0.90, green: 0.78, blue: 0.20),
                             Color(red: 0.96, green: 0.55, blue: 0.20)
                         ],
@@ -787,12 +1185,12 @@ private struct MediumScoreCard: View {
                 Text("のんびり")
                     .font(.system(size: 10, weight: .bold, design: .rounded))
             }
-            .foregroundStyle(GrowmiWidgetTheme.primaryGreen)
+            .foregroundStyle(accentColor)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
             .background(
                 Capsule(style: .continuous)
-                    .fill(GrowmiWidgetTheme.primaryGreen.opacity(0.12))
+                    .fill(accentColor.opacity(0.12))
             )
             .offset(y: 55)
         }
@@ -801,9 +1199,17 @@ private struct MediumScoreCard: View {
 }
 
 private struct LargePillCard<Content: View>: View {
+    let borderColor: Color
+    let fillColor: Color
     let content: Content
 
-    init(@ViewBuilder content: () -> Content) {
+    init(
+        borderColor: Color = GrowmiWidgetTheme.debugBorder,
+        fillColor: Color = GrowmiWidgetTheme.backgroundBase,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.borderColor = borderColor
+        self.fillColor = fillColor
         self.content = content()
     }
 
@@ -815,12 +1221,12 @@ private struct LargePillCard<Content: View>: View {
             .frame(minHeight: 50, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(GrowmiWidgetTheme.backgroundBase.opacity(0.92))
+                    .fill(fillColor.opacity(0.92))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(
-                        GrowmiWidgetTheme.debugBorder.opacity(0.6),
+                        borderColor.opacity(0.6),
                         style: StrokeStyle(lineWidth: 1, dash: [4, 4])
                     )
             )
@@ -859,4 +1265,30 @@ private struct DamageMark: View {
             .fill(color)
             .frame(width: length, height: 2)
     }
+}
+#Preview("Small", as: .systemSmall) {
+    LifeformWidget()
+} timeline: {
+    LifeformWidgetEntry(
+        date: .now,
+        snapshot: .placeholder
+    )
+}
+
+#Preview("Medium", as: .systemMedium) {
+    LifeformWidget()
+} timeline: {
+    LifeformWidgetEntry(
+        date: .now,
+        snapshot: .placeholder
+    )
+}
+
+#Preview("Large", as: .systemLarge) {
+    LifeformWidget()
+} timeline: {
+    LifeformWidgetEntry(
+        date: .now,
+        snapshot: .placeholder
+    )
 }
