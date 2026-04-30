@@ -237,8 +237,8 @@ private struct LifeformWidgetEntryView: View {
                             LinearGradient(
                                 stops: [
                                     .init(color: .clear, location: 0.0),
-                                    .init(color: .white.opacity(0.02), location: 0.08),
-                                    .init(color: .white.opacity(0.12), location: 0.14),
+                                    .init(color: .white.opacity(0.01), location: 0.10),
+                                    .init(color: .white.opacity(0.10), location: 0.16),
                                     .init(color: .white.opacity(0.90), location: 0.22),
                                     .init(color: .white, location: 1.0)
                                 ],
@@ -322,63 +322,116 @@ private struct LifeformWidgetEntryView: View {
     }
 
     private var largeLayout: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("今日のGrowmi")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundStyle(GrowmiWidgetTheme.textPrimary)
-                Spacer()
-                Text(entry.snapshot.moodText)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(entry.snapshot.digitalPenalty >= 0.6 ? GrowmiWidgetTheme.warningRed : GrowmiWidgetTheme.leafGreen)
-            }
+        GeometryReader { geometry in
+            VStack(spacing: 6) {
+                ZStack(alignment: .topLeading) {
+                    Color.clear
 
-            ZStack {
-                cardBackground
+                    MediumScoreCard(snapshot: entry.snapshot)
+                        .frame(width: geometry.size.width * 0.5)
+                        .offset(x: -10, y: 60)
+                        .zIndex(1)
+                        .scaleEffect(1.2)
 
-                HStack(alignment: .center, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        GrowmiCreatureView(snapshot: entry.snapshot, sizeMode: .large)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                        Text(creatureSummary)
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundStyle(GrowmiWidgetTheme.textSecondary)
-                            .lineLimit(2)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    VStack(spacing: 10) {
-                        MetricCard(
-                            title: "運動状況",
-                            value: "\(entry.snapshot.stepCount)",
-                            detail: "目標の\(Int(entry.snapshot.physicalScore * 100))%",
-                            ringProgress: entry.snapshot.physicalScore,
-                            style: .growth
-                        )
-
-                        MetricCard(
-                            title: "SNS疲れ",
-                            value: strainDescriptor,
-                            detail: "\(entry.snapshot.selectedItemCount)件えらばれてるよ",
-                            ringProgress: entry.snapshot.digitalPenalty,
-                            style: .strain
-                        )
-
-                        MetricCard(
-                            title: "選択数",
-                            value: "\(entry.snapshot.selectedItemCount)",
-                            detail: "アプリ・カテゴリ・Webの合計",
-                            ringProgress: min(1.0, Double(entry.snapshot.selectedItemCount) / 10.0),
-                            style: .neutral
-                        )
-                    }
-                    .frame(width: 132)
+                    Image("Green")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: geometry.size.width * 0.75)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                        .offset(x: 22, y: 5)
+                        .mask {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .clear, location: 0.0),
+                                    .init(color: .white.opacity(0.02), location: 0.08),
+                                    .init(color: .white.opacity(0.12), location: 0.14),
+                                    .init(color: .white.opacity(0.90), location: 0.22),
+                                    .init(color: .white, location: 1.0)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        }
+                        .overlay(alignment: .leading) {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: GrowmiWidgetTheme.backgroundBase, location: 0.0),
+                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.98), location: 0.30),
+                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.65), location: 0.62),
+                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.0), location: 1.0)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                            .frame(width: geometry.size.width * 0.14)
+                        }
+                        .overlay(alignment: .bottom) {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.0), location: 0.0),
+                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.16), location: 0.78),
+                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.50), location: 0.93),
+                                    .init(color: GrowmiWidgetTheme.backgroundBase.opacity(0.76), location: 1.0)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: geometry.size.height * 0.055)
+                        }
                 }
-                .padding(14)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                LazyVGrid(
+                    columns: [
+                        GridItem(.fixed(176), spacing: 0),
+                        GridItem(.fixed(176), spacing: 0)
+                    ],
+                    spacing: 6
+                ) {
+                    LargePillCard {
+                        MediumStatRow(
+                            iconName: "figure.walk",
+                            iconColor: GrowmiWidgetTheme.primaryGreen,
+                            iconSize: 20,
+                            title: "歩数",
+                            value: "\(entry.snapshot.stepCount.formatted())歩"
+                        )
+                    }
+
+                    LargePillCard {
+                        MediumStatRow(
+                            iconName: "clock",
+                            iconColor: GrowmiWidgetTheme.warmOrange,
+                            iconSize: 17,
+                            title: "SNS利用時間",
+                            value: "0分"
+                        )
+                    }
+
+                    LargePillCard {
+                        MediumStatRow(
+                            iconName: "heart.fill",
+                            iconColor: Color(red: 0.93, green: 0.55, blue: 0.72),
+                            iconSize: 17,
+                            title: "すれ違い",
+                            value: "0人"
+                        )
+                    }
+
+                    LargePillCard {
+                        MediumStatRow(
+                            iconName: "shoeprints.fill",
+                            iconColor: Color(red: 0.31, green: 0.58, blue: 0.96),
+                            iconSize: 16,
+                            title: "移動距離",
+                            value: "\(estimatedDistanceKilometers.formatted(.number.precision(.fractionLength(1))))km"
+                        )
+                    }
+                }
+                .frame(width: 296)
+                .offset(y: -15)
             }
         }
-        .padding(12)
     }
 
     private var strainDescriptor: String {
@@ -401,6 +454,11 @@ private struct LifeformWidgetEntryView: View {
             return "Growmiは自然が大好き!"
         }
     }
+
+    private var estimatedDistanceKilometers: Double {
+        Double(entry.snapshot.stepCount) * 0.0007
+    }
+
 }
 
 private enum GrowmiCreatureSizeMode {
@@ -724,6 +782,33 @@ private struct MediumScoreCard: View {
             .offset(y: 55)
         }
         .frame(width: 120, height: 100)
+    }
+}
+
+private struct LargePillCard<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .padding(.horizontal, 20)
+            .padding(.vertical, 5)
+            .frame(width: 170, alignment: .leading)
+            .frame(minHeight: 50, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(GrowmiWidgetTheme.backgroundBase.opacity(0.92))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(
+                        GrowmiWidgetTheme.debugBorder.opacity(0.6),
+                        style: StrokeStyle(lineWidth: 1, dash: [4, 4])
+                    )
+            )
     }
 }
 
