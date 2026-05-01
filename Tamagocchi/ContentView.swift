@@ -47,6 +47,72 @@ enum GrowmiTheme {
     static let debugBorder = Color(red: 0.55, green: 0.78, blue: 0.66)
 }
 
+private extension CharacterKind {
+    var appBackgroundColors: [Color] {
+        switch self {
+        case .green:
+            return [
+                Color(red: 0.972, green: 0.931, blue: 0.905),
+                Color(red: 0.952, green: 0.954, blue: 0.908)
+            ]
+        case .blue:
+            return [
+                Color(red: 0.836, green: 0.900, blue: 0.943),
+                Color(red: 0.804, green: 0.878, blue: 0.931)
+            ]
+        case .red:
+            return [
+                Color(red: 0.989, green: 0.878, blue: 0.800),
+                Color(red: 0.981, green: 0.846, blue: 0.760)
+            ]
+        }
+    }
+
+    var appAccentColor: Color {
+        switch self {
+        case .green:
+            return GrowmiTheme.primaryGreen
+        case .blue:
+            return Color(red: 0.34, green: 0.62, blue: 0.92)
+        case .red:
+            return Color(red: 0.93, green: 0.55, blue: 0.72)
+        }
+    }
+
+    var appLineColor: Color {
+        switch self {
+        case .green:
+            return Color(red: 0.55, green: 0.78, blue: 0.66)
+        case .blue:
+            return Color(red: 0.42, green: 0.65, blue: 0.87)
+        case .red:
+            return Color(red: 0.88, green: 0.54, blue: 0.66)
+        }
+    }
+
+    var appBackgroundBaseColor: Color {
+        switch self {
+        case .green:
+            return Color(red: 0.972, green: 0.931, blue: 0.905)
+        case .blue:
+            return Color(red: 0.836, green: 0.900, blue: 0.943)
+        case .red:
+            return Color(red: 0.989, green: 0.878, blue: 0.800)
+        }
+    }
+
+    var smallDisplayName: String {
+        switch self {
+        case .green:
+            return "green_small"
+        case .blue:
+            return "blue_small"
+        case .red:
+            return "red_small"
+        }
+    }
+}
+
 private func localizedAuthorizationStatusText(_ text: String) -> String {
     switch text {
     case "Not Determined":
@@ -57,6 +123,46 @@ private func localizedAuthorizationStatusText(_ text: String) -> String {
         return "許可済み"
     default:
         return "不明"
+    }
+}
+
+private enum AppSection: String, CaseIterable, Identifiable {
+    case home
+    case history
+    case characters
+    case apps
+    case settings
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .settings:
+            return "設定"
+        case .apps:
+            return "アプリ"
+        case .characters:
+            return "キャラ"
+        case .history:
+            return "履歴"
+        case .home:
+            return "ホーム"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .settings:
+            return "gearshape"
+        case .apps:
+            return "square.grid.2x2"
+        case .characters:
+            return "face.smiling"
+        case .history:
+            return "clock.arrow.circlepath"
+        case .home:
+            return "house"
+        }
     }
 }
 
@@ -71,74 +177,25 @@ struct ContentView: View {
     @State private var showReport = false
     @State private var stepCountMessage = "歩数はまだ読み込まれてないよ"
     @State private var selectedCharacter: CharacterKind = .blue
+    @State private var selectedSection: AppSection = .home
 
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [GrowmiTheme.backgroundTop, GrowmiTheme.backgroundBottom],
+                colors: selectedCharacter.appBackgroundColors,
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
 
-            TabView {
-                CreaturePage(
-                    stepCount: parsedStepCount,
-                    selectedItemCount: selectedItemCount,
-                    authorizationStatusText: authorizationStatusText,
-                    stepCountMessage: stepCountMessage,
-                    selectionMessage: selectionMessage,
-                    physicalLevel: physicalLevel,
-                    digitalPenalty: digitalPenalty,
-                    physicalTag: physicalTag,
-                    digitalStatusText: digitalStatusText
-                )
-
-                MetricsPage(
-                    stepCount: parsedStepCount,
-                    selectedItemCount: selectedItemCount,
-                    authorizationStatusText: authorizationStatusText,
-                    physicalLevel: physicalLevel,
-                    digitalPenalty: digitalPenalty,
-                    screenTimeHoursAvailable: screenTimeHoursAvailable,
-                    physicalTag: physicalTag,
-                    digitalStatusText: digitalStatusText,
-                    requestScreenTimeAccess: {
-                        Task {
-                            await requestScreenTimeAccess()
-                        }
-                    },
-                    openFamilyActivityPicker: {
-                        isPresented = true
-                    },
-                    toggleReport: {
-                        showReport.toggle()
-                    },
-                    loadTodaySteps: {
-                        Task {
-                            await loadTodayStepCount()
-                        }
-                    },
-                    isPresented: $isPresented,
-                    selection: $selection,
-                    showReport: showReport
-                )
-
-                DebugPage(
-                    authorizationStatusText: authorizationStatusText,
-                    authorizationMessage: authorizationMessage,
-                    selectionMessage: selectionMessage,
-                    selectedApps: selection.applicationTokens.count,
-                    selectedCategories: selection.categoryTokens.count,
-                    selectedWebDomains: selection.webDomainTokens.count,
-                    showReport: showReport,
-                    stepCountMessage: stepCountMessage,
-                    selectedCharacter: $selectedCharacter,
-                    reportContext: reportContext,
-                    reportFilter: reportFilter
-                )
-            }
-            .tabViewStyle(.page)
+            currentSectionView
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            BottomNavigationBar(
+                selectedSection: $selectedSection,
+                selectedCharacter: selectedCharacter
+            )
         }
         .onChange(of: selection) { _, newSelection in
             selectionMessage = "アプリ \(newSelection.applicationTokens.count) 件、カテゴリ \(newSelection.categoryTokens.count) 件、Web \(newSelection.webDomainTokens.count) 件が選ばれたよ。"
@@ -151,6 +208,73 @@ struct ContentView: View {
         .onAppear {
             loadSelectionFromSharedStorage()
             syncWidgetStateToWidget()
+        }
+    }
+
+    @ViewBuilder
+    private var currentSectionView: some View {
+        switch selectedSection {
+        case .home:
+            CreaturePage(
+                stepCount: parsedStepCount,
+                selectedItemCount: selectedItemCount,
+                authorizationStatusText: authorizationStatusText,
+                stepCountMessage: stepCountMessage,
+                selectionMessage: selectionMessage,
+                physicalLevel: physicalLevel,
+                digitalPenalty: digitalPenalty,
+                physicalTag: physicalTag,
+                digitalStatusText: digitalStatusText,
+                selectedCharacter: selectedCharacter
+            )
+        case .history:
+            MetricsPage(
+                stepCount: parsedStepCount,
+                selectedItemCount: selectedItemCount,
+                authorizationStatusText: authorizationStatusText,
+                physicalLevel: physicalLevel,
+                digitalPenalty: digitalPenalty,
+                screenTimeHoursAvailable: screenTimeHoursAvailable,
+                physicalTag: physicalTag,
+                digitalStatusText: digitalStatusText,
+                requestScreenTimeAccess: {
+                    Task {
+                        await requestScreenTimeAccess()
+                    }
+                },
+                openFamilyActivityPicker: {
+                    isPresented = true
+                },
+                toggleReport: {
+                    showReport.toggle()
+                },
+                loadTodaySteps: {
+                    Task {
+                        await loadTodayStepCount()
+                    }
+                },
+                isPresented: $isPresented,
+                selection: $selection,
+                showReport: showReport
+            )
+        case .characters:
+            PlaceholderSectionView(title: "キャラ")
+        case .apps:
+            PlaceholderSectionView(title: "アプリ")
+        case .settings:
+            DebugPage(
+                authorizationStatusText: authorizationStatusText,
+                authorizationMessage: authorizationMessage,
+                selectionMessage: selectionMessage,
+                selectedApps: selection.applicationTokens.count,
+                selectedCategories: selection.categoryTokens.count,
+                selectedWebDomains: selection.webDomainTokens.count,
+                showReport: showReport,
+                stepCountMessage: stepCountMessage,
+                selectedCharacter: $selectedCharacter,
+                reportContext: reportContext,
+                reportFilter: reportFilter
+            )
         }
     }
 
@@ -347,37 +471,298 @@ private struct CreaturePage: View {
     let digitalPenalty: Double
     let physicalTag: String
     let digitalStatusText: String
+    let selectedCharacter: CharacterKind
+
+    private var overallScore: Int {
+        let physicalScore = min(1.0, physicalLevel / 10_000.0)
+        let score = (physicalScore * 70.0) + ((1.0 - digitalPenalty) * 30.0)
+        return Int(max(0, min(100, score)).rounded())
+    }
+
+    private var estimatedDistanceKilometers: Double {
+        Double(stepCount) * 0.0007
+    }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 16) {
-                PageHeader(
-                    title: "Growmi",
-                    subtitle: "自然大好き。"
+        VStack(spacing: 0) {
+            Image(selectedCharacter.displayName)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity, alignment: .top)
+                .mask {
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0.0),
+                            .init(color: .white.opacity(0.88), location: 0.10),
+                            .init(color: .white, location: 0.18),
+                            .init(color: .white, location: 0.82),
+                            .init(color: .white.opacity(0.88), location: 0.90),
+                            .init(color: .clear, location: 1.0)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+
+            HStack(alignment: .center, spacing: 6) {
+                VStack(spacing: 10) {
+                    AppDataPill(
+                        iconName: "figure.walk",
+                        iconColor: GrowmiTheme.primaryGreen,
+                        title: "歩数",
+                        value: "\(stepCount.formatted())歩",
+                        borderColor: selectedCharacter.appLineColor
+                    )
+
+                    AppDataPill(
+                        iconName: "shoeprints.fill",
+                        iconColor: Color(red: 0.31, green: 0.58, blue: 0.96),
+                        title: "移動距離",
+                        value: "\(estimatedDistanceKilometers.formatted(.number.precision(.fractionLength(1))))km",
+                        borderColor: selectedCharacter.appLineColor
+                    )
+                }
+
+                AppScoreCard(
+                    score: overallScore,
+                    accentColor: selectedCharacter.appAccentColor
                 )
 
-                CreatureCard(
-                    stepCount: stepCount,
-                    selectedItemCount: selectedItemCount,
-                    authorizationStatusText: authorizationStatusText,
-                    stepCountMessage: stepCountMessage,
-                    selectionMessage: selectionMessage,
-                    physicalLevel: physicalLevel,
-                    digitalPenalty: digitalPenalty,
-                    physicalTag: physicalTag,
-                    digitalStatusText: digitalStatusText
-                )
-                .border(GrowmiTheme.debugBorder, width: 1)
+                VStack(spacing: 10) {
+                    AppDataPill(
+                        iconName: "clock",
+                        iconColor: GrowmiTheme.warmOrange,
+                        title: "SNS利用時間",
+                        value: "0分",
+                        borderColor: selectedCharacter.appLineColor
+                    )
 
-                SummaryStrip(
-                    stepCount: stepCount,
-                    selectedItemCount: selectedItemCount,
-                    authorizationStatusText: authorizationStatusText
-                )
+                    AppDataPill(
+                        iconName: "heart.fill",
+                        iconColor: Color(red: 0.93, green: 0.55, blue: 0.72),
+                        title: "すれ違い",
+                        value: "0人",
+                        borderColor: selectedCharacter.appLineColor
+                    )
+                }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 24)
+            .padding(.horizontal, 18)
+            .offset(y: 6)
+
+            Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+}
+
+private struct AppScoreCard: View {
+    let score: Int
+    let accentColor: Color
+
+    private var normalizedScore: Double {
+        Double(score) / 100.0
+    }
+
+    var body: some View {
+        ZStack {
+            OpenCircleArc()
+                .stroke(Color.white.opacity(0.72), style: StrokeStyle(lineWidth: 11, lineCap: .round))
+
+            OpenCircleArc(progress: normalizedScore)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            accentColor,
+                            Color(red: 0.90, green: 0.78, blue: 0.20),
+                            Color(red: 0.96, green: 0.55, blue: 0.20)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ),
+                    style: StrokeStyle(lineWidth: 11, lineCap: .round)
+                )
+
+            VStack(spacing: 3) {
+                Image(systemName: "sun.max.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(GrowmiTheme.warmOrange)
+
+                Text("\(score)")
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .foregroundStyle(GrowmiTheme.textPrimary)
+
+                Text("/100")
+                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                    .foregroundStyle(GrowmiTheme.textSecondary)
+                    .offset(y: -4)
+            }
+
+            HStack(spacing: 6) {
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("のんびり")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+            }
+            .foregroundStyle(accentColor)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(accentColor.opacity(0.12))
+            )
+            .offset(y: 68)
+        }
+        .frame(width: 156, height: 136)
+    }
+}
+
+private struct AppDataPill: View {
+    let iconName: String
+    let iconColor: Color
+    let title: String
+    let value: String
+    let borderColor: Color
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Image(systemName: iconName)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(iconColor)
+                .frame(width: 18)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(GrowmiTheme.textSecondary)
+
+                Text(value)
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(GrowmiTheme.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(width: 116, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.30))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(borderColor.opacity(0.6), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+        )
+    }
+}
+
+private struct OpenCircleArc: Shape {
+    var progress: Double = 1.0
+
+    func path(in rect: CGRect) -> Path {
+        let clamped = max(0.0, min(1.0, progress))
+        let startAngle = Angle.degrees(145)
+        let endAngle = Angle.degrees(395)
+        let currentAngle = Angle.degrees(145 + (250 * clamped))
+        let radius = (min(rect.width, rect.height) / 2) - 8
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+
+        var path = Path()
+        path.addArc(
+            center: center,
+            radius: radius,
+            startAngle: startAngle,
+            endAngle: progress >= 1.0 ? endAngle : currentAngle,
+            clockwise: false
+        )
+        return path
+    }
+}
+
+private struct PlaceholderSectionView: View {
+    let title: String
+
+    var body: some View {
+        VStack {
+            Spacer()
+            Text(title)
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundStyle(GrowmiTheme.textPrimary.opacity(0.55))
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct BottomNavigationBar: View {
+    @Binding var selectedSection: AppSection
+    let selectedCharacter: CharacterKind
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            VStack(spacing: 0) {
+                Rectangle()
+                    .fill(Color.black.opacity(0.08))
+                    .frame(height: 1)
+
+                HStack(spacing: 0) {
+                    ForEach([AppSection.home, .history]) { section in
+                        navigationItem(for: section)
+                    }
+
+                    Color.clear
+                        .frame(width: 92)
+
+                    ForEach([AppSection.apps, .settings]) { section in
+                        navigationItem(for: section)
+                    }
+                }
+                .padding(.horizontal, 22)
+                .frame(height: 60)
+                .background(Color.white.opacity(0.22))
+            }
+
+            navigationItem(for: .characters)
+                .offset(y: -16)
+        }
+        .frame(height: 74)
+    }
+
+    @ViewBuilder
+    private func navigationItem(for section: AppSection) -> some View {
+        Button {
+            selectedSection = section
+        } label: {
+            if section == .characters {
+                Image(selectedCharacter.smallDisplayName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 52, height: 52)
+                    .padding(7)
+                    .background(
+                        Circle()
+                            .fill(selectedCharacter.appBackgroundBaseColor)
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(Color.black.opacity(0.14), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.06), radius: 4, y: 1)
+                    .frame(width: 76, height: 76)
+                    .frame(width: 92)
+            } else {
+                VStack(spacing: 8) {
+                    Image(systemName: section.iconName)
+                        .font(.system(size: 21, weight: .semibold))
+                    Text(section.title)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                }
+                .foregroundStyle(selectedSection == section ? Color(red: 0.10, green: 0.45, blue: 0.95) : Color.black.opacity(0.55))
+                .frame(maxWidth: .infinity)
+                .padding(.top, 8)
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
 
