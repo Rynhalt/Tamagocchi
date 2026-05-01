@@ -712,53 +712,93 @@ private struct LifeformWidgetEntryView: View {
                         .stroke(palette.lineColor.opacity(0.35), lineWidth: 1)
                 )
 
-            VStack(alignment: .leading, spacing: 14) {
-                ZStack {
-                    Circle()
-                        .stroke(palette.lineColor.opacity(0.24), lineWidth: 10)
+            if entry.timerState.isRunning {
+                VStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .stroke(palette.lineColor.opacity(0.24), lineWidth: 10)
 
-                    Circle()
-                        .trim(from: 0, to: entry.timerState.progress)
-                        .stroke(
-                            AngularGradient(
-                                colors: [
-                                    palette.accentColor,
-                                    palette.lineColor,
-                                    palette.accentColor.opacity(0.82)
-                                ],
-                                center: .center
-                            ),
-                            style: StrokeStyle(lineWidth: 10, lineCap: .round)
-                        )
-                        .rotationEffect(.degrees(-90))
+                        Circle()
+                            .trim(from: 0, to: entry.timerState.progress)
+                            .stroke(
+                                AngularGradient(
+                                    colors: [
+                                        palette.accentColor,
+                                        palette.lineColor,
+                                        palette.accentColor.opacity(0.82)
+                                    ],
+                                    center: .center
+                                ),
+                                style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
 
-                    VStack(spacing: 4) {
-                        Group {
+                        VStack(spacing: 2) {
                             if let interval = entry.timerState.countdownRange {
                                 Text(timerInterval: interval, countsDown: true)
                             } else {
                                 Text("0:00")
                             }
                         }
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(GrowmiWidgetTheme.textPrimary)
                         .multilineTextAlignment(.center)
-                        .frame(width: 66, alignment: .center)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                        .frame(width: 78, height: 78, alignment: .center)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .frame(width: 104, height: 104)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(width: 92, height: 92)
-                .frame(maxWidth: .infinity)
+                .padding(12)
+            } else {
+                VStack(alignment: .leading, spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .stroke(palette.lineColor.opacity(0.24), lineWidth: 10)
 
-                HStack(spacing: 6) {
-                    timerButton(title: "10分", intent: StartTenMinuteTimerIntent())
-                    timerButton(title: "20分", intent: StartTwentyMinuteTimerIntent())
-                    timerButton(title: "30分", intent: StartThirtyMinuteTimerIntent())
+                        Circle()
+                            .trim(from: 0, to: entry.timerState.progress)
+                            .stroke(
+                                AngularGradient(
+                                    colors: [
+                                        palette.accentColor,
+                                        palette.lineColor,
+                                        palette.accentColor.opacity(0.82)
+                                    ],
+                                    center: .center
+                                ),
+                                style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
+
+                        VStack(spacing: 4) {
+                            Group {
+                                if let interval = entry.timerState.countdownRange {
+                                    Text(timerInterval: interval, countsDown: true)
+                                } else {
+                                    Text("0:00")
+                                }
+                            }
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(GrowmiWidgetTheme.textPrimary)
+                            .multilineTextAlignment(.center)
+                            .frame(width: 66, alignment: .center)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    }
+                    .frame(width: 92, height: 92)
+                    .frame(maxWidth: .infinity)
+
+                    HStack(spacing: 6) {
+                        timerButton(title: "10分", intent: StartTenMinuteTimerIntent())
+                        timerButton(title: "20分", intent: StartTwentyMinuteTimerIntent())
+                        timerButton(title: "30分", intent: StartThirtyMinuteTimerIntent())
+                    }
                 }
+                .padding(12)
             }
-            .padding(12)
         }
     }
 
