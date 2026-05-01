@@ -719,7 +719,7 @@ private struct BottomNavigationBar: View {
                 }
                 .padding(.horizontal, 22)
                 .frame(height: 60)
-                .background(Color.white.opacity(0.22))
+                .background(selectedCharacter.appBackgroundBaseColor.opacity(0.98))
             }
 
             navigationItem(for: .characters)
