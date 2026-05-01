@@ -724,14 +724,14 @@ private struct BottomNavigationBar: View {
 
                 Rectangle()
                     .fill(selectedCharacter.appBackgroundBaseColor.opacity(0.98))
-                    .frame(height: 34)
+                    .frame(height: 72)
             }
 
             navigationItem(for: .characters)
                 .offset(y: -16)
         }
-        .frame(height: 108)
-        .offset(y: 8)
+        .frame(height: 100)
+        .offset(y: 50)
     }
 
     @ViewBuilder
