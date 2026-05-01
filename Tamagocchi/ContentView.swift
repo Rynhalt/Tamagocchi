@@ -191,11 +191,12 @@ struct ContentView: View {
             currentSectionView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .overlay(alignment: .bottom) {
             BottomNavigationBar(
                 selectedSection: $selectedSection,
                 selectedCharacter: selectedCharacter
             )
+            .ignoresSafeArea(edges: .bottom)
         }
         .onChange(of: selection) { _, newSelection in
             selectionMessage = "アプリ \(newSelection.applicationTokens.count) 件、カテゴリ \(newSelection.categoryTokens.count) 件、Web \(newSelection.webDomainTokens.count) 件が選ばれたよ。"
@@ -720,12 +721,17 @@ private struct BottomNavigationBar: View {
                 .padding(.horizontal, 22)
                 .frame(height: 60)
                 .background(selectedCharacter.appBackgroundBaseColor.opacity(0.98))
+
+                Rectangle()
+                    .fill(selectedCharacter.appBackgroundBaseColor.opacity(0.98))
+                    .frame(height: 34)
             }
 
             navigationItem(for: .characters)
                 .offset(y: -16)
         }
-        .frame(height: 74)
+        .frame(height: 108)
+        .offset(y: 8)
     }
 
     @ViewBuilder
