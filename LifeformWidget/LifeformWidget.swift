@@ -754,12 +754,18 @@ private struct LifeformWidgetEntryView: View {
                 .padding(12)
             } else {
                 VStack(spacing: 8) {
-                    timerButton(title: "10分", intent: StartTenMinuteTimerIntent())
-                    timerButton(title: "20分", intent: StartTwentyMinuteTimerIntent())
-                    timerButton(title: "30分", intent: StartThirtyMinuteTimerIntent())
+                    Spacer(minLength: 0)
+
+                    VStack(spacing: 8) {
+                        timerButton(title: "10分", intent: StartTenMinuteTimerIntent())
+                        timerButton(title: "20分", intent: StartTwentyMinuteTimerIntent())
+                        timerButton(title: "30分", intent: StartThirtyMinuteTimerIntent())
+                    }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(14)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .padding(.horizontal, 10)
+                .padding(.bottom, 4)
+                .padding(.top, 6)
             }
         }
     }
@@ -768,10 +774,10 @@ private struct LifeformWidgetEntryView: View {
     private func timerButton<Intent: AppIntent>(title: String, intent: Intent) -> some View {
         Button(intent: intent) {
             Text(title)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundStyle(GrowmiWidgetTheme.textPrimary)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
+                .padding(.vertical, 12)
                 .background(
                     Capsule(style: .continuous)
                         .fill(Color.white.opacity(0.62))

@@ -700,38 +700,45 @@ private struct BottomNavigationBar: View {
     let selectedCharacter: CharacterKind
 
     var body: some View {
-        ZStack(alignment: .top) {
-            VStack(spacing: 0) {
-                Rectangle()
-                    .fill(Color.black.opacity(0.08))
-                    .frame(height: 1)
+        GeometryReader { proxy in
+            let bottomInset = proxy.safeAreaInsets.bottom
 
-                HStack(spacing: 0) {
-                    ForEach([AppSection.home, .history]) { section in
-                        navigationItem(for: section)
+            ZStack(alignment: .top) {
+                selectedCharacter.appBackgroundBaseColor.opacity(0.98)
+                    .ignoresSafeArea(edges: .bottom)
+
+                VStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.black.opacity(0.08))
+                        .frame(height: 1)
+
+                    HStack(spacing: 0) {
+                        ForEach([AppSection.home, .history]) { section in
+                            navigationItem(for: section)
+                        }
+
+                        Color.clear
+                            .frame(width: 92)
+
+                        ForEach([AppSection.apps, .settings]) { section in
+                            navigationItem(for: section)
+                        }
                     }
+                    .padding(.horizontal, 22)
+                    .frame(height: 60)
 
                     Color.clear
-                        .frame(width: 92)
-
-                    ForEach([AppSection.apps, .settings]) { section in
-                        navigationItem(for: section)
-                    }
+                        .frame(height: bottomInset)
                 }
-                .padding(.horizontal, 22)
-                .frame(height: 60)
-                .background(selectedCharacter.appBackgroundBaseColor.opacity(0.98))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-                Rectangle()
-                    .fill(selectedCharacter.appBackgroundBaseColor.opacity(0.98))
-                    .frame(height: 34)
+                navigationItem(for: .characters)
+                    .offset(y: -16)
             }
-
-            navigationItem(for: .characters)
-                .offset(y: -16)
+            .frame(maxWidth: .infinity, maxHeight: 60 + bottomInset)
+            .frame(maxHeight: .infinity, alignment: .bottom)
         }
-        .frame(height: 108)
-        .offset(y: 8)
+        .frame(height: 60 + 44)
     }
 
     @ViewBuilder
