@@ -733,71 +733,33 @@ private struct LifeformWidgetEntryView: View {
                             )
                             .rotationEffect(.degrees(-90))
 
-                        VStack(spacing: 2) {
+                        Group {
                             if let interval = entry.timerState.countdownRange {
                                 Text(timerInterval: interval, countsDown: true)
                             } else {
                                 Text("0:00")
                             }
                         }
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(GrowmiWidgetTheme.textPrimary)
                         .multilineTextAlignment(.center)
-                        .frame(width: 78, height: 78, alignment: .center)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .frame(width: 84, height: 84, alignment: .center)
                     }
-                    .frame(width: 104, height: 104)
+                    .frame(width: 118, height: 118)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .padding(12)
             } else {
-                VStack(alignment: .leading, spacing: 14) {
-                    ZStack {
-                        Circle()
-                            .stroke(palette.lineColor.opacity(0.24), lineWidth: 10)
-
-                        Circle()
-                            .trim(from: 0, to: entry.timerState.progress)
-                            .stroke(
-                                AngularGradient(
-                                    colors: [
-                                        palette.accentColor,
-                                        palette.lineColor,
-                                        palette.accentColor.opacity(0.82)
-                                    ],
-                                    center: .center
-                                ),
-                                style: StrokeStyle(lineWidth: 10, lineCap: .round)
-                            )
-                            .rotationEffect(.degrees(-90))
-
-                        VStack(spacing: 4) {
-                            Group {
-                                if let interval = entry.timerState.countdownRange {
-                                    Text(timerInterval: interval, countsDown: true)
-                                } else {
-                                    Text("0:00")
-                                }
-                            }
-                            .font(.system(size: 22, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                            .foregroundStyle(GrowmiWidgetTheme.textPrimary)
-                            .multilineTextAlignment(.center)
-                            .frame(width: 66, alignment: .center)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    }
-                    .frame(width: 92, height: 92)
-                    .frame(maxWidth: .infinity)
-
-                    HStack(spacing: 6) {
-                        timerButton(title: "10分", intent: StartTenMinuteTimerIntent())
-                        timerButton(title: "20分", intent: StartTwentyMinuteTimerIntent())
-                        timerButton(title: "30分", intent: StartThirtyMinuteTimerIntent())
-                    }
+                VStack(spacing: 8) {
+                    timerButton(title: "10分", intent: StartTenMinuteTimerIntent())
+                    timerButton(title: "20分", intent: StartTwentyMinuteTimerIntent())
+                    timerButton(title: "30分", intent: StartThirtyMinuteTimerIntent())
                 }
-                .padding(12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(14)
             }
         }
     }
@@ -806,10 +768,10 @@ private struct LifeformWidgetEntryView: View {
     private func timerButton<Intent: AppIntent>(title: String, intent: Intent) -> some View {
         Button(intent: intent) {
             Text(title)
-                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .font(.system(size: 12, weight: .bold, design: .rounded))
                 .foregroundStyle(GrowmiWidgetTheme.textPrimary)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
+                .padding(.vertical, 10)
                 .background(
                     Capsule(style: .continuous)
                         .fill(Color.white.opacity(0.62))
