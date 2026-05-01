@@ -412,10 +412,10 @@ private struct LifeformWidgetEntryView: View {
         case .red:
             return CharacterPalette(
                 backgroundColors: [
-                    Color(red: 0.982, green: 0.852, blue: 0.730),
-                    Color(red: 0.973, green: 0.816, blue: 0.682)
+                    Color(red: 0.989, green: 0.878, blue: 0.800),
+                    Color(red: 0.981, green: 0.846, blue: 0.760)
                 ],
-                backgroundBase: Color(red: 0.982, green: 0.852, blue: 0.730),
+                backgroundBase: Color(red: 0.989, green: 0.878, blue: 0.800),
                 lineColor: Color(red: 0.88, green: 0.54, blue: 0.66),
                 accentColor: Color(red: 0.93, green: 0.55, blue: 0.72)
             )
@@ -577,13 +577,13 @@ private struct LifeformWidgetEntryView: View {
                             .zIndex(1)
                             .scaleEffect(1.4)
 
-                        Image(characterImageName)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: geometry.size.width * 0.75)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                            .offset(x: 22, y: 5)
-                            .mask {
+                    Image(characterImageName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: geometry.size.width * 0.75)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                        .offset(x: 40, y: 5)
+                        .mask {
                                 LinearGradient(
                                     stops: [
                                         .init(color: .clear, location: 0.0),
