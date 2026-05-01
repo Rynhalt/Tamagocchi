@@ -69,7 +69,7 @@ struct ContentView: View {
     @State private var selectionMessage = "まだ何も選ばれてないよ"
     @State private var showReport = false
     @State private var stepCountMessage = "歩数はまだ読み込まれてないよ"
-    @State private var selectedCharacter: CharacterKind = .green
+    @State private var selectedCharacter: CharacterKind = .blue
 
     var body: some View {
         ZStack {

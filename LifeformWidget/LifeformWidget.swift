@@ -52,7 +52,7 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
         selectedWebDomains: 0,
         stepCount: 0,
         showReport: false,
-        selectedCharacter: .green
+        selectedCharacter: .blue
     )
 
     var selectedItemCount: Int {
@@ -257,6 +257,268 @@ private struct LifeformWidgetEntryView: View {
             .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
     }
 
+    private enum CreatureSceneMode {
+        case medium
+        case large
+    }
+
+    private struct CreatureSceneView: View {
+        let snapshot: LifeformWidgetStateSnapshot
+        let characterImageName: String
+        let palette: CharacterPalette
+        let mode: CreatureSceneMode
+        let strainDescriptor: String
+        let creatureSummary: String
+        let estimatedDistanceKilometers: Double
+
+        var body: some View {
+            switch mode {
+            case .medium:
+                mediumScene
+            case .large:
+                largeScene
+            }
+        }
+
+        private var mediumScene: some View {
+            GeometryReader { geometry in
+                let width = geometry.size.width
+                let height = geometry.size.height
+
+                ZStack {
+                    HStack {
+                        Spacer()
+
+                        Image(characterImageName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: width * 0.5, height: height)
+                            .offset(x: +20, y: 0)
+                            .mask {
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .clear, location: 0.0),
+                                        .init(color: .white.opacity(0.01), location: 0.10),
+                                        .init(color: .white.opacity(0.10), location: 0.16),
+                                        .init(color: .white.opacity(0.90), location: 0.22),
+                                        .init(color: .white, location: 1.0)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            }
+                            .overlay(alignment: .leading) {
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: palette.backgroundBase, location: 0.0),
+                                        .init(color: palette.backgroundBase.opacity(0.98), location: 0.30),
+                                        .init(color: palette.backgroundBase.opacity(0.65), location: 0.62),
+                                        .init(color: palette.backgroundBase.opacity(0.0), location: 1.0)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                                .frame(width: width * 0.08)
+                            }
+                    }
+
+                    Path { path in
+                        let topInset = height * 0.9
+                        let bottomInset = height * 0.9
+                        let verticalX = width * 0.35
+                        let horizontalStartX = verticalX + (width * 0.05)
+                        let horizontalEndX = width * 0.6
+                        let firstHorizontalY = height * 0.35
+                        let secondHorizontalY = height * 0.65
+
+                        path.move(to: CGPoint(x: verticalX, y: topInset))
+                        path.addLine(to: CGPoint(x: verticalX, y: height - bottomInset))
+
+                        path.move(to: CGPoint(x: horizontalStartX, y: firstHorizontalY))
+                        path.addLine(to: CGPoint(x: horizontalEndX, y: firstHorizontalY))
+
+                        path.move(to: CGPoint(x: horizontalStartX, y: secondHorizontalY))
+                        path.addLine(to: CGPoint(x: horizontalEndX, y: secondHorizontalY))
+                    }
+                    .stroke(palette.lineColor.opacity(0.6), style: StrokeStyle(
+                            lineWidth: 1,
+                            dash: [4, 4]
+                        )
+                    )
+
+                    MediumScoreCard(
+                        snapshot: snapshot,
+                        accentColor: palette.accentColor,
+                        borderColor: palette.lineColor
+                    )
+                        .frame(width: width * 0.20)
+                        .offset(x: -(width * 0.32), y: 5)
+
+                    VStack(alignment: .leading, spacing: height * 0.08) {
+                        MediumStatRow(
+                            iconName: "figure.walk",
+                            iconColor: GrowmiWidgetTheme.primaryGreen,
+                            iconSize: 20,
+                            title: "歩数",
+                            value: "\(snapshot.stepCount)歩"
+                        )
+                        .offset(x: 5, y: -3)
+                        MediumStatRow(
+                            iconName: "clock",
+                            iconColor: GrowmiWidgetTheme.warmOrange,
+                            iconSize: 18,
+                            title: "SNS利用時間",
+                            value: "0分"
+                        )
+                            .offset(x: 5, y: 0)
+                        MediumStatRow(
+                            iconName: "heart.fill",
+                            iconColor: Color(red: 0.93, green: 0.55, blue: 0.72),
+                            iconSize: 18,
+                            title: "すれ違い",
+                            value: "0人"
+                        )
+                            .offset(x: 5, y: 5)
+                    }
+                    .frame(width: width * 0.30, alignment: .leading)
+                    .offset(x: width * 0.02, y: 0)
+                }
+            }
+        }
+
+        private var largeScene: some View {
+            GeometryReader { geometry in
+                VStack(spacing: 6) {
+                    ZStack(alignment: .topLeading) {
+                        Color.clear
+
+                        MediumScoreCard(
+                            snapshot: snapshot,
+                            accentColor: palette.accentColor,
+                            borderColor: palette.lineColor
+                        )
+                            .frame(width: geometry.size.width * 0.5)
+                            .offset(x: 0, y: 60)
+                            .zIndex(1)
+                            .scaleEffect(1.4)
+
+                        Image(characterImageName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: geometry.size.width * 0.75)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                            .offset(x: 22, y: 5)
+                            .mask {
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .clear, location: 0.0),
+                                        .init(color: .white.opacity(0.0), location: 0.12),
+                                        .init(color: .white.opacity(0.08), location: 0.20),
+                                        .init(color: .white.opacity(0.72), location: 0.34),
+                                        .init(color: .white, location: 1.0)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            }
+                            .overlay(alignment: .leading) {
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: palette.backgroundBase, location: 0.0),
+                                        .init(color: palette.backgroundBase.opacity(1.0), location: 0.52),
+                                        .init(color: palette.backgroundBase.opacity(0.88), location: 0.74),
+                                        .init(color: palette.backgroundBase.opacity(0.0), location: 1.0)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                                .frame(width: geometry.size.width * 0.22)
+                            }
+                            .overlay(alignment: .bottom) {
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: palette.backgroundBase.opacity(0.0), location: 0.0),
+                                        .init(color: palette.backgroundBase.opacity(0.16), location: 0.78),
+                                        .init(color: palette.backgroundBase.opacity(0.50), location: 0.93),
+                                        .init(color: palette.backgroundBase.opacity(0.76), location: 1.0)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                                .frame(height: geometry.size.height * 0.055)
+                            }
+
+                        LinearGradient(
+                            stops: [
+                                .init(color: palette.backgroundBase, location: 0.0),
+                                .init(color: palette.backgroundBase.opacity(1.0), location: 0.52),
+                                .init(color: palette.backgroundBase.opacity(0.62), location: 0.80),
+                                .init(color: palette.backgroundBase.opacity(0.0), location: 1.0)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: geometry.size.width * 0.23, height: geometry.size.height * 0.62)
+                        .offset(x: geometry.size.width * 0.27, y: geometry.size.height * 0.08)
+                        .zIndex(0.5)
+                        .allowsHitTesting(false)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    LazyVGrid(
+                        columns: [
+                            GridItem(.flexible(), spacing: geometry.size.width * 0.03),
+                            GridItem(.flexible(), spacing: geometry.size.width * 0.03)
+                        ],
+                        spacing: 6
+                    ) {
+                        LargePillCard(borderColor: palette.lineColor, fillColor: palette.backgroundBase) {
+                            MediumStatRow(
+                                iconName: "figure.walk",
+                                iconColor: GrowmiWidgetTheme.primaryGreen,
+                                iconSize: 20,
+                                title: "歩数",
+                                value: "\(snapshot.stepCount.formatted())歩"
+                            )
+                        }
+
+                        LargePillCard(borderColor: palette.lineColor, fillColor: palette.backgroundBase) {
+                            MediumStatRow(
+                                iconName: "clock",
+                                iconColor: GrowmiWidgetTheme.warmOrange,
+                                iconSize: 17,
+                                title: "SNS利用時間",
+                                value: "0分"
+                            )
+                        }
+
+                        LargePillCard(borderColor: palette.lineColor, fillColor: palette.backgroundBase) {
+                            MediumStatRow(
+                                iconName: "heart.fill",
+                                iconColor: Color(red: 0.93, green: 0.55, blue: 0.72),
+                                iconSize: 17,
+                                title: "すれ違い",
+                                value: "0人"
+                            )
+                        }
+
+                        LargePillCard(borderColor: palette.lineColor, fillColor: palette.backgroundBase) {
+                            MediumStatRow(
+                                iconName: "shoeprints.fill",
+                                iconColor: Color(red: 0.31, green: 0.58, blue: 0.96),
+                                iconSize: 16,
+                                title: "移動距離",
+                                value: "\(estimatedDistanceKilometers.formatted(.number.precision(.fractionLength(1))))km"
+                            )
+                        }
+                    }
+                    .frame(maxWidth: geometry.size.width * 0.88)
+                    .offset(y: -15)
+                }
+            }
+        }
+    }
+
     private var smallLayout: some View {
         Image(characterImageName)
             .resizable()
@@ -265,249 +527,27 @@ private struct LifeformWidgetEntryView: View {
     }
 
     private var mediumLayout: some View {
-        greenMediumLayout
+        CreatureSceneView(
+            snapshot: entry.snapshot,
+            characterImageName: characterImageName,
+            palette: palette,
+            mode: .medium,
+            strainDescriptor: strainDescriptor,
+            creatureSummary: creatureSummary,
+            estimatedDistanceKilometers: estimatedDistanceKilometers
+        )
     }
 
     private var largeLayout: some View {
-        greenLargeLayout
-    }
-
-    private var greenMediumLayout: some View {
-        GeometryReader { geometry in
-            let width = geometry.size.width
-            let height = geometry.size.height
-
-            ZStack {
-                HStack {
-                    Spacer()
-
-                    Image(characterImageName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: width * 0.5, height: height)
-                        .offset(x: +20, y: 0)
-                        .mask {
-                            LinearGradient(
-                                stops: [
-                                    .init(color: .clear, location: 0.0),
-                                    .init(color: .white.opacity(0.01), location: 0.10),
-                                    .init(color: .white.opacity(0.10), location: 0.16),
-                                    .init(color: .white.opacity(0.90), location: 0.22),
-                                    .init(color: .white, location: 1.0)
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        }
-                        .overlay(alignment: .leading) {
-                            LinearGradient(
-                                stops: [
-                                    .init(color: palette.backgroundBase, location: 0.0),
-                                    .init(color: palette.backgroundBase.opacity(0.98), location: 0.30),
-                                    .init(color: palette.backgroundBase.opacity(0.65), location: 0.62),
-                                    .init(color: palette.backgroundBase.opacity(0.0), location: 1.0)
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                            .frame(width: width * 0.08)
-                        }
-                }
-
-                Path { path in
-                    let topInset = height * 0.9
-                    let bottomInset = height * 0.9
-                    let verticalX = width * 0.35
-                    let horizontalStartX = verticalX + (width * 0.05)
-                    let horizontalEndX = width * 0.6
-                    let firstHorizontalY = height * 0.35
-                    let secondHorizontalY = height * 0.65
-
-                    path.move(to: CGPoint(x: verticalX, y: topInset))
-                    path.addLine(to: CGPoint(x: verticalX, y: height - bottomInset))
-
-                    path.move(to: CGPoint(x: horizontalStartX, y: firstHorizontalY))
-                    path.addLine(to: CGPoint(x: horizontalEndX, y: firstHorizontalY))
-
-                    path.move(to: CGPoint(x: horizontalStartX, y: secondHorizontalY))
-                    path.addLine(to: CGPoint(x: horizontalEndX, y: secondHorizontalY))
-                }
-                .stroke(palette.lineColor.opacity(0.6), style: StrokeStyle(
-                        lineWidth: 1,
-                        dash: [4, 4]
-                    )
-                )
-
-                MediumScoreCard(
-                    snapshot: entry.snapshot,
-                    accentColor: palette.accentColor,
-                    borderColor: palette.lineColor
-                )
-                    .frame(width: width * 0.20)
-                    .offset(x: -(width * 0.32), y: 5)
-
-                VStack(alignment: .leading, spacing: height * 0.08) {
-                    MediumStatRow(
-                        iconName: "figure.walk",
-                        iconColor: GrowmiWidgetTheme.primaryGreen,
-                        iconSize: 20,
-                        title: "歩数",
-                        value: "\(entry.snapshot.stepCount)歩"
-                    )
-                    .offset(x: 5, y: -3)
-                    MediumStatRow(
-                        iconName: "clock",
-                        iconColor: GrowmiWidgetTheme.warmOrange,
-                        iconSize: 18,
-                        title: "SNS利用時間",
-                        value: "0分"
-                    )
-                        .offset(x: 5, y: 0)
-                    MediumStatRow(
-                        iconName: "heart.fill",
-                        iconColor: Color(red: 0.93, green: 0.55, blue: 0.72),
-                        iconSize: 18,
-                        title: "すれ違い",
-                        value: "0人"
-                    )
-                        .offset(x: 5, y: 5)
-                }
-                .frame(width: width * 0.30, alignment: .leading)
-                .offset(x: width * 0.02, y: 0)
-            }
-        }
-    }
-
-    private var greenLargeLayout: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 6) {
-                ZStack(alignment: .topLeading) {
-                    Color.clear
-
-                    MediumScoreCard(
-                        snapshot: entry.snapshot,
-                        accentColor: palette.accentColor,
-                        borderColor: palette.lineColor
-                    )
-                        .frame(width: geometry.size.width * 0.5)
-                        .offset(x: 0, y: 60)
-                        .zIndex(1)
-                        .scaleEffect(1.4)
-
-                    Image(characterImageName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: geometry.size.width * 0.75)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                        .offset(x: 22, y: 5)
-                        .mask {
-                            LinearGradient(
-                                stops: [
-                                    .init(color: .clear, location: 0.0),
-                                    .init(color: .white.opacity(0.0), location: 0.12),
-                                    .init(color: .white.opacity(0.08), location: 0.20),
-                                    .init(color: .white.opacity(0.72), location: 0.34),
-                                    .init(color: .white, location: 1.0)
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        }
-                        .overlay(alignment: .leading) {
-                            LinearGradient(
-                                stops: [
-                                    .init(color: palette.backgroundBase, location: 0.0),
-                                    .init(color: palette.backgroundBase.opacity(1.0), location: 0.52),
-                                    .init(color: palette.backgroundBase.opacity(0.88), location: 0.74),
-                                    .init(color: palette.backgroundBase.opacity(0.0), location: 1.0)
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                            .frame(width: geometry.size.width * 0.22)
-                        }
-                        .overlay(alignment: .bottom) {
-                            LinearGradient(
-                                stops: [
-                                    .init(color: palette.backgroundBase.opacity(0.0), location: 0.0),
-                                    .init(color: palette.backgroundBase.opacity(0.16), location: 0.78),
-                                    .init(color: palette.backgroundBase.opacity(0.50), location: 0.93),
-                                    .init(color: palette.backgroundBase.opacity(0.76), location: 1.0)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                            .frame(height: geometry.size.height * 0.055)
-                        }
-
-                    LinearGradient(
-                        stops: [
-                            .init(color: palette.backgroundBase, location: 0.0),
-                            .init(color: palette.backgroundBase.opacity(1.0), location: 0.52),
-                            .init(color: palette.backgroundBase.opacity(0.62), location: 0.80),
-                            .init(color: palette.backgroundBase.opacity(0.0), location: 1.0)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: geometry.size.width * 0.23, height: geometry.size.height * 0.62)
-                    .offset(x: geometry.size.width * 0.27, y: geometry.size.height * 0.08)
-                    .zIndex(0.5)
-                    .allowsHitTesting(false)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                LazyVGrid(
-                    columns: [
-                        GridItem(.flexible(), spacing: geometry.size.width * 0.03),
-                        GridItem(.flexible(), spacing: geometry.size.width * 0.03)
-                    ],
-                    spacing: 6
-                ) {
-                    LargePillCard(borderColor: palette.lineColor, fillColor: palette.backgroundBase) {
-                        MediumStatRow(
-                            iconName: "figure.walk",
-                            iconColor: GrowmiWidgetTheme.primaryGreen,
-                            iconSize: 20,
-                            title: "歩数",
-                            value: "\(entry.snapshot.stepCount.formatted())歩"
-                        )
-                    }
-
-                    LargePillCard(borderColor: palette.lineColor, fillColor: palette.backgroundBase) {
-                        MediumStatRow(
-                            iconName: "clock",
-                            iconColor: GrowmiWidgetTheme.warmOrange,
-                            iconSize: 17,
-                            title: "SNS利用時間",
-                            value: "0分"
-                        )
-                    }
-
-                    LargePillCard(borderColor: palette.lineColor, fillColor: palette.backgroundBase) {
-                        MediumStatRow(
-                            iconName: "heart.fill",
-                            iconColor: Color(red: 0.93, green: 0.55, blue: 0.72),
-                            iconSize: 17,
-                            title: "すれ違い",
-                            value: "0人"
-                        )
-                    }
-
-                    LargePillCard(borderColor: palette.lineColor, fillColor: palette.backgroundBase) {
-                        MediumStatRow(
-                            iconName: "shoeprints.fill",
-                            iconColor: Color(red: 0.31, green: 0.58, blue: 0.96),
-                            iconSize: 16,
-                            title: "移動距離",
-                            value: "\(estimatedDistanceKilometers.formatted(.number.precision(.fractionLength(1))))km"
-                        )
-                    }
-                }
-                .frame(maxWidth: geometry.size.width * 0.88)
-                .offset(y: -15)
-            }
-        }
+        CreatureSceneView(
+            snapshot: entry.snapshot,
+            characterImageName: characterImageName,
+            palette: palette,
+            mode: .large,
+            strainDescriptor: strainDescriptor,
+            creatureSummary: creatureSummary,
+            estimatedDistanceKilometers: estimatedDistanceKilometers
+        )
     }
 
     private var blueSmallLayout: some View {
