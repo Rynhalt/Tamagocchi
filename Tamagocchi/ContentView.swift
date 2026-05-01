@@ -14,6 +14,7 @@ import SwiftUI
 
 private let lifeformAppGroupID = "group.com.marcus.Growmi"
 private let lifeformWidgetStateKey = "LifeformWidgetState"
+private let lifeformSelectionKey = "LifeformTimerSelectionData"
 
 enum CharacterKind: String, CaseIterable, Codable, Identifiable {
     case green
@@ -141,12 +142,14 @@ struct ContentView: View {
         }
         .onChange(of: selection) { _, newSelection in
             selectionMessage = "アプリ \(newSelection.applicationTokens.count) 件、カテゴリ \(newSelection.categoryTokens.count) 件、Web \(newSelection.webDomainTokens.count) 件が選ばれたよ。"
+            syncSelectionToSharedStorage()
             syncWidgetStateToWidget()
         }
         .onChange(of: selectedCharacter) { _, _ in
             syncWidgetStateToWidget()
         }
         .onAppear {
+            loadSelectionFromSharedStorage()
             syncWidgetStateToWidget()
         }
     }
@@ -299,6 +302,26 @@ struct ContentView: View {
 
         defaults.set(data, forKey: lifeformWidgetStateKey)
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    private func syncSelectionToSharedStorage() {
+        guard let defaults = UserDefaults(suiteName: lifeformAppGroupID),
+              let data = try? JSONEncoder().encode(selection) else {
+            return
+        }
+
+        defaults.set(data, forKey: lifeformSelectionKey)
+    }
+
+    private func loadSelectionFromSharedStorage() {
+        guard let defaults = UserDefaults(suiteName: lifeformAppGroupID),
+              let data = defaults.data(forKey: lifeformSelectionKey),
+              let storedSelection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) else {
+            return
+        }
+
+        selection = storedSelection
+        selectionMessage = "アプリ \(storedSelection.applicationTokens.count) 件、カテゴリ \(storedSelection.categoryTokens.count) 件、Web \(storedSelection.webDomainTokens.count) 件が選ばれたよ。"
     }
 }
 

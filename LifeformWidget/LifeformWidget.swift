@@ -1,3 +1,6 @@
+import AppIntents
+import FamilyControls
+import ManagedSettings
 import SwiftUI
 import WidgetKit
 
@@ -25,6 +28,9 @@ private enum GrowmiWidgetTheme {
 
 private let lifeformAppGroupID = "group.com.marcus.Growmi"
 private let lifeformWidgetStateKey = "LifeformWidgetState"
+private let lifeformTimerEndDateKey = "LifeformWidgetTimerEndDate"
+private let lifeformTimerDurationKey = "LifeformWidgetTimerDurationMinutes"
+private let lifeformSelectionKey = "LifeformTimerSelectionData"
 
 enum CharacterKind: String, Codable {
     case green
@@ -106,6 +112,172 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
     }
 }
 
+private struct LifeformTimerState: Hashable {
+    let durationMinutes: Int
+    let endDate: Date?
+
+    static let inactive = LifeformTimerState(durationMinutes: 0, endDate: nil)
+
+    var isRunning: Bool {
+        guard let endDate else {
+            return false
+        }
+        return endDate > Date()
+    }
+
+    var remainingSeconds: Int {
+        guard let endDate else {
+            return 0
+        }
+        return max(0, Int(ceil(endDate.timeIntervalSinceNow)))
+    }
+
+    var remainingText: String {
+        let seconds = remainingSeconds
+        let minutes = seconds / 60
+        let remainder = seconds % 60
+
+        if minutes > 0 {
+            return String(format: "%d:%02d", minutes, remainder)
+        } else {
+            return String(format: "0:%02d", remainder)
+        }
+    }
+
+    var statusText: String {
+        if isRunning {
+            return "タイマー中"
+        } else if durationMinutes > 0 {
+            return "いつでも開始できるよ"
+        } else {
+            return "まだ始まってないよ"
+        }
+    }
+
+    var progress: Double {
+        guard durationMinutes > 0 else {
+            return 0
+        }
+        let totalSeconds = Double(durationMinutes * 60)
+        return max(0, min(1, 1 - (Double(remainingSeconds) / totalSeconds)))
+    }
+
+    var countdownRange: ClosedRange<Date>? {
+        guard let endDate, isRunning else {
+            return nil
+        }
+
+        return Date.now...endDate
+    }
+}
+
+private enum LifeformTimerStore {
+    static func load() -> LifeformTimerState {
+        guard let defaults = UserDefaults(suiteName: lifeformAppGroupID) else {
+            return .inactive
+        }
+
+        let duration = defaults.integer(forKey: lifeformTimerDurationKey)
+        let endDate = defaults.object(forKey: lifeformTimerEndDateKey) as? Date
+
+        guard let endDate, endDate > Date() else {
+            clear(in: defaults)
+            return .inactive
+        }
+
+        return LifeformTimerState(durationMinutes: duration, endDate: endDate)
+    }
+
+    static func start(minutes: Int) {
+        guard let defaults = UserDefaults(suiteName: lifeformAppGroupID) else {
+            return
+        }
+
+        let endDate = Date().addingTimeInterval(TimeInterval(minutes * 60))
+        defaults.set(minutes, forKey: lifeformTimerDurationKey)
+        defaults.set(endDate, forKey: lifeformTimerEndDateKey)
+    }
+
+    static func clear() {
+        guard let defaults = UserDefaults(suiteName: lifeformAppGroupID) else {
+            return
+        }
+
+        clear(in: defaults)
+    }
+
+    private static func clear(in defaults: UserDefaults) {
+        defaults.removeObject(forKey: lifeformTimerDurationKey)
+        defaults.removeObject(forKey: lifeformTimerEndDateKey)
+    }
+}
+
+private func startTimerSession(minutes: Int) {
+    LifeformTimerStore.start(minutes: minutes)
+    applyScreenTimeShieldIfPossible()
+    WidgetCenter.shared.reloadTimelines(ofKind: "LifeformWidget")
+}
+
+private func applyScreenTimeShieldIfPossible() {
+    guard let selection = loadSharedFamilyActivitySelection() else {
+        return
+    }
+
+    let store = ManagedSettingsStore()
+    store.shield.applications = selection.applicationTokens
+    store.shield.applicationCategories = .specific(selection.categoryTokens)
+    store.shield.webDomains = selection.webDomainTokens
+}
+
+private func loadSharedFamilyActivitySelection() -> FamilyActivitySelection? {
+    guard let defaults = UserDefaults(suiteName: lifeformAppGroupID),
+          let data = defaults.data(forKey: lifeformSelectionKey),
+          let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) else {
+        return nil
+    }
+
+    return selection
+}
+
+struct StartTenMinuteTimerIntent: AppIntent {
+    static var title: LocalizedStringResource = "10分タイマー"
+    static var description = IntentDescription("10分のタイマーを開始します。")
+    static var openAppWhenRun = false
+
+    func perform() async throws -> some IntentResult {
+        await MainActor.run {
+            startTimerSession(minutes: 10)
+        }
+        return .result()
+    }
+}
+
+struct StartTwentyMinuteTimerIntent: AppIntent {
+    static var title: LocalizedStringResource = "20分タイマー"
+    static var description = IntentDescription("20分のタイマーを開始します。")
+    static var openAppWhenRun = false
+
+    func perform() async throws -> some IntentResult {
+        await MainActor.run {
+            startTimerSession(minutes: 20)
+        }
+        return .result()
+    }
+}
+
+struct StartThirtyMinuteTimerIntent: AppIntent {
+    static var title: LocalizedStringResource = "30分タイマー"
+    static var description = IntentDescription("30分のタイマーを開始します。")
+    static var openAppWhenRun = false
+
+    func perform() async throws -> some IntentResult {
+        await MainActor.run {
+            startTimerSession(minutes: 30)
+        }
+        return .result()
+    }
+}
+
 private struct CharacterPalette {
     let backgroundColors: [Color]
     let backgroundBase: Color
@@ -116,20 +288,23 @@ private struct CharacterPalette {
 private struct LifeformWidgetEntry: TimelineEntry {
     let date: Date
     let snapshot: LifeformWidgetStateSnapshot
+    let timerState: LifeformTimerState
 }
 
 private struct LifeformWidgetProvider: TimelineProvider {
     func placeholder(in context: Context) -> LifeformWidgetEntry {
-        LifeformWidgetEntry(date: .now, snapshot: .placeholder)
+        LifeformWidgetEntry(date: .now, snapshot: .placeholder, timerState: .inactive)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (LifeformWidgetEntry) -> Void) {
-        completion(LifeformWidgetEntry(date: .now, snapshot: loadSnapshot()))
+        completion(LifeformWidgetEntry(date: .now, snapshot: loadSnapshot(), timerState: LifeformTimerStore.load()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<LifeformWidgetEntry>) -> Void) {
-        let entry = LifeformWidgetEntry(date: .now, snapshot: loadSnapshot())
-        completion(Timeline(entries: [entry], policy: .never))
+        let timerState = LifeformTimerStore.load()
+        let entry = LifeformWidgetEntry(date: .now, snapshot: loadSnapshot(), timerState: timerState)
+        let policy: TimelineReloadPolicy = timerState.isRunning ? .after(Date().addingTimeInterval(1)) : .never
+        completion(Timeline(entries: [entry], policy: policy))
     }
 
     private func loadSnapshot() -> LifeformWidgetStateSnapshot {
@@ -520,10 +695,91 @@ private struct LifeformWidgetEntryView: View {
     }
 
     private var smallLayout: some View {
-        Image(characterImageName)
-            .resizable()
-            .scaledToFit()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+        ZStack {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            palette.backgroundBase.opacity(0.98),
+                            palette.backgroundColors.last ?? palette.backgroundBase
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .stroke(palette.lineColor.opacity(0.35), lineWidth: 1)
+                )
+
+            VStack(alignment: .leading, spacing: 14) {
+                ZStack {
+                    Circle()
+                        .stroke(palette.lineColor.opacity(0.24), lineWidth: 10)
+
+                    Circle()
+                        .trim(from: 0, to: entry.timerState.progress)
+                        .stroke(
+                            AngularGradient(
+                                colors: [
+                                    palette.accentColor,
+                                    palette.lineColor,
+                                    palette.accentColor.opacity(0.82)
+                                ],
+                                center: .center
+                            ),
+                            style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                        )
+                        .rotationEffect(.degrees(-90))
+
+                    VStack(spacing: 4) {
+                        Group {
+                            if let interval = entry.timerState.countdownRange {
+                                Text(timerInterval: interval, countsDown: true)
+                            } else {
+                                Text("0:00")
+                            }
+                        }
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(GrowmiWidgetTheme.textPrimary)
+                        .multilineTextAlignment(.center)
+                        .frame(width: 66, alignment: .center)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
+                .frame(width: 92, height: 92)
+                .frame(maxWidth: .infinity)
+
+                HStack(spacing: 6) {
+                    timerButton(title: "10分", intent: StartTenMinuteTimerIntent())
+                    timerButton(title: "20分", intent: StartTwentyMinuteTimerIntent())
+                    timerButton(title: "30分", intent: StartThirtyMinuteTimerIntent())
+                }
+            }
+            .padding(12)
+        }
+    }
+
+    @ViewBuilder
+    private func timerButton<Intent: AppIntent>(title: String, intent: Intent) -> some View {
+        Button(intent: intent) {
+            Text(title)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(GrowmiWidgetTheme.textPrimary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.white.opacity(0.62))
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(palette.lineColor.opacity(0.30), lineWidth: 1)
+                        )
+                )
+        }
+        .buttonStyle(.plain)
     }
 
     private var mediumLayout: some View {
@@ -1305,30 +1561,4 @@ private struct DamageMark: View {
             .fill(color)
             .frame(width: length, height: 2)
     }
-}
-#Preview("Small", as: .systemSmall) {
-    LifeformWidget()
-} timeline: {
-    LifeformWidgetEntry(
-        date: .now,
-        snapshot: .placeholder
-    )
-}
-
-#Preview("Medium", as: .systemMedium) {
-    LifeformWidget()
-} timeline: {
-    LifeformWidgetEntry(
-        date: .now,
-        snapshot: .placeholder
-    )
-}
-
-#Preview("Large", as: .systemLarge) {
-    LifeformWidget()
-} timeline: {
-    LifeformWidgetEntry(
-        date: .now,
-        snapshot: .placeholder
-    )
 }
