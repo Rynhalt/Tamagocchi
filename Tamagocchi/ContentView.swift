@@ -128,9 +128,6 @@ private func localizedAuthorizationStatusText(_ text: String) -> String {
 
 private enum AppSection: String, CaseIterable, Identifiable {
     case home
-    case history
-    case characters
-    case apps
     case settings
 
     var id: String { rawValue }
@@ -139,12 +136,6 @@ private enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .settings:
             return "設定"
-        case .apps:
-            return "アプリ"
-        case .characters:
-            return "キャラ"
-        case .history:
-            return "履歴"
         case .home:
             return "ホーム"
         }
@@ -154,12 +145,6 @@ private enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .settings:
             return "gearshape"
-        case .apps:
-            return "square.grid.2x2"
-        case .characters:
-            return "face.smiling"
-        case .history:
-            return "clock.arrow.circlepath"
         case .home:
             return "house"
         }
@@ -228,16 +213,17 @@ struct ContentView: View {
                 digitalStatusText: digitalStatusText,
                 selectedCharacter: selectedCharacter
             )
-        case .history:
-            MetricsPage(
-                stepCount: parsedStepCount,
-                selectedItemCount: selectedItemCount,
+        case .settings:
+            SettingsPage(
                 authorizationStatusText: authorizationStatusText,
-                physicalLevel: physicalLevel,
-                digitalPenalty: digitalPenalty,
-                screenTimeHoursAvailable: screenTimeHoursAvailable,
-                physicalTag: physicalTag,
-                digitalStatusText: digitalStatusText,
+                authorizationMessage: authorizationMessage,
+                selectionMessage: selectionMessage,
+                selectedApps: selection.applicationTokens.count,
+                selectedCategories: selection.categoryTokens.count,
+                selectedWebDomains: selection.webDomainTokens.count,
+                showReport: showReport,
+                stepCountMessage: stepCountMessage,
+                selectedCharacter: $selectedCharacter,
                 requestScreenTimeAccess: {
                     Task {
                         await requestScreenTimeAccess()
@@ -256,23 +242,6 @@ struct ContentView: View {
                 },
                 isPresented: $isPresented,
                 selection: $selection,
-                showReport: showReport
-            )
-        case .characters:
-            PlaceholderSectionView(title: "キャラ")
-        case .apps:
-            PlaceholderSectionView(title: "アプリ")
-        case .settings:
-            DebugPage(
-                authorizationStatusText: authorizationStatusText,
-                authorizationMessage: authorizationMessage,
-                selectionMessage: selectionMessage,
-                selectedApps: selection.applicationTokens.count,
-                selectedCategories: selection.categoryTokens.count,
-                selectedWebDomains: selection.webDomainTokens.count,
-                showReport: showReport,
-                stepCountMessage: stepCountMessage,
-                selectedCharacter: $selectedCharacter,
                 reportContext: reportContext,
                 reportFilter: reportFilter
             )
@@ -287,8 +256,8 @@ struct ContentView: View {
         min(1.0, Double(selectedItemCount) / 10.0)
     }
 
-    private var screenTimeHoursAvailable: Double {
-        max(0, 24.0 - (digitalPenalty * 10.0))
+    private var physicalLevel: Double {
+        Double(parsedStepCount)
     }
 
     private var hasScreenTimeSelection: Bool {
@@ -297,10 +266,6 @@ struct ContentView: View {
 
     private var isScreenTimeApproved: Bool {
         authorizationCenter.authorizationStatus == .approved
-    }
-
-    private var physicalLevel: Double {
-        Double(parsedStepCount)
     }
 
     private var parsedStepCount: Int {
@@ -713,14 +678,7 @@ private struct BottomNavigationBar: View {
                         .frame(height: 1)
 
                     HStack(spacing: 0) {
-                        ForEach([AppSection.home, .history]) { section in
-                            navigationItem(for: section)
-                        }
-
-                        Color.clear
-                            .frame(width: 92)
-
-                        ForEach([AppSection.apps, .settings]) { section in
+                        ForEach([AppSection.home, .settings]) { section in
                             navigationItem(for: section)
                         }
                     }
@@ -732,8 +690,6 @@ private struct BottomNavigationBar: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-                navigationItem(for: .characters)
-                    .offset(y: -16)
             }
             .frame(maxWidth: .infinity, maxHeight: 60 + bottomInset)
             .frame(maxHeight: .infinity, alignment: .bottom)
@@ -746,78 +702,49 @@ private struct BottomNavigationBar: View {
         Button {
             selectedSection = section
         } label: {
-            if section == .characters {
-                Image(selectedCharacter.smallDisplayName)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 52, height: 52)
-                    .padding(7)
-                    .background(
-                        Circle()
-                            .fill(selectedCharacter.appBackgroundBaseColor)
-                    )
-                    .overlay(
-                        Circle()
-                            .stroke(Color.black.opacity(0.14), lineWidth: 1)
-                    )
-                    .shadow(color: Color.black.opacity(0.06), radius: 4, y: 1)
-                    .frame(width: 76, height: 76)
-                    .frame(width: 92)
-            } else {
-                VStack(spacing: 8) {
-                    Image(systemName: section.iconName)
-                        .font(.system(size: 21, weight: .semibold))
-                    Text(section.title)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                }
-                .foregroundStyle(selectedSection == section ? Color(red: 0.10, green: 0.45, blue: 0.95) : Color.black.opacity(0.55))
-                .frame(maxWidth: .infinity)
-                .padding(.top, 8)
+            VStack(spacing: 8) {
+                Image(systemName: section.iconName)
+                    .font(.system(size: 21, weight: .semibold))
+                Text(section.title)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
             }
+            .foregroundStyle(selectedSection == section ? Color(red: 0.10, green: 0.45, blue: 0.95) : Color.black.opacity(0.55))
+            .frame(maxWidth: .infinity)
+            .padding(.top, 8)
         }
         .buttonStyle(.plain)
     }
 }
 
-private struct MetricsPage: View {
-    let stepCount: Int
-    let selectedItemCount: Int
+private struct SettingsPage: View {
     let authorizationStatusText: String
-    let physicalLevel: Double
-    let digitalPenalty: Double
-    let screenTimeHoursAvailable: Double
-    let physicalTag: String
-    let digitalStatusText: String
+    let authorizationMessage: String
+    let selectionMessage: String
+    let selectedApps: Int
+    let selectedCategories: Int
+    let selectedWebDomains: Int
+    let showReport: Bool
+    let stepCountMessage: String
+    @Binding var selectedCharacter: CharacterKind
     let requestScreenTimeAccess: () -> Void
     let openFamilyActivityPicker: () -> Void
     let toggleReport: () -> Void
     let loadTodaySteps: () -> Void
     @Binding var isPresented: Bool
     @Binding var selection: FamilyActivitySelection
-    let showReport: Bool
-
-    private var progressValue: Double {
-        min(Double(stepCount) / 10_000.0, 1.0)
-    }
+    let reportContext: DeviceActivityReport.Context
+    let reportFilter: DeviceActivityFilter
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
                 PageHeader(
-                    title: "今日のようす",
-                    subtitle: "歩くほど元気になるよ！スマホを使いすぎると少し疲れるよ。"
+                    title: "設定",
+                    subtitle: "権限や選択をまとめて整えるよ。"
                 )
 
-                HStack(alignment: .top, spacing: 12) {
-                    PhysicalGrowthCard(progressValue: progressValue, stepCount: stepCount)
-                        .border(GrowmiTheme.debugBorder, width: 1)
-
-                    DigitalStrainCard(
-                        digitalPenalty: digitalPenalty,
-                        screenTimeHoursAvailable: screenTimeHoursAvailable
-                    )
-                        .border(GrowmiTheme.debugBorder, width: 1)
-                }
+                CharacterSelectionPanel(selectedCharacter: $selectedCharacter)
+                    .border(GrowmiTheme.debugBorder, width: 1)
 
                 ActionPanel(
                     requestScreenTimeAccess: requestScreenTimeAccess,
@@ -829,48 +756,6 @@ private struct MetricsPage: View {
                     showReport: showReport
                 )
                 .border(GrowmiTheme.debugBorder, width: 1)
-
-                VStack(alignment: .leading, spacing: 10) {
-                    MetricRow(title: "歩数", value: "\(stepCount)")
-                    MetricRow(title: "選ばれた項目", value: "\(selectedItemCount)")
-                    MetricRow(title: "許可状態", value: localizedAuthorizationStatusText(authorizationStatusText))
-                    MetricRow(title: "フィットネス", value: physicalTag)
-                    MetricRow(title: "SNS疲れ", value: digitalStatusText)
-                }
-                .border(GrowmiTheme.debugBorder, width: 1)
-
-                Text("歩くほど元気になるよ！スマホを使いすぎると少し疲れるよ。")
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundStyle(GrowmiTheme.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 2)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 24)
-        }
-    }
-}
-
-private struct DebugPage: View {
-    let authorizationStatusText: String
-    let authorizationMessage: String
-    let selectionMessage: String
-    let selectedApps: Int
-    let selectedCategories: Int
-    let selectedWebDomains: Int
-    let showReport: Bool
-    let stepCountMessage: String
-    @Binding var selectedCharacter: CharacterKind
-    let reportContext: DeviceActivityReport.Context
-    let reportFilter: DeviceActivityFilter
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 16) {
-                PageHeader(
-                    title: "デバッグ",
-                    subtitle: "バックエンドの状態を見ながら調整するよ。"
-                )
 
                 DebugStatusPanel(
                     authorizationStatusText: authorizationStatusText,
@@ -884,14 +769,11 @@ private struct DebugPage: View {
                 )
                 .border(GrowmiTheme.debugBorder, width: 1)
 
-                CharacterSelectionPanel(selectedCharacter: $selectedCharacter)
-                    .border(GrowmiTheme.debugBorder, width: 1)
-
                 if showReport {
                     ReportSection(
                         authorizationStatusText: authorizationStatusText,
                         selectionMessage: selectionMessage,
-                        physicalTag: "debug",
+                        physicalTag: "設定",
                         reportContext: reportContext,
                         reportFilter: reportFilter
                     )
