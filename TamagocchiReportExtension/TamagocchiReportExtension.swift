@@ -1,6 +1,27 @@
 import Charts
 import DeviceActivity
+import Foundation
 import SwiftUI
+import WidgetKit
+
+private let lifeformAppGroupID = "group.com.marcus.Growmi"
+private let lifeformScreenTimeMinutesKey = "LifeformScreenTimeMinutes"
+private let lifeformScreenTimeUpdatedAtKey = "LifeformScreenTimeUpdatedAt"
+
+private func persistTotalScreenTime(_ minutes: Double) {
+    guard let defaults = UserDefaults(suiteName: lifeformAppGroupID) else {
+        print("[ScreenTime] Extension failed to open App Group defaults")
+        return
+    }
+
+    let updatedAt = Date().timeIntervalSince1970
+    print("[ScreenTime] Extension opened App Group defaults")
+    defaults.set(minutes, forKey: lifeformScreenTimeMinutesKey)
+    defaults.set(updatedAt, forKey: lifeformScreenTimeUpdatedAtKey)
+    print("[ScreenTime] Extension wrote minutes: \(minutes)")
+    print("[ScreenTime] Extension wrote updatedAt: \(Date(timeIntervalSince1970: updatedAt))")
+    WidgetCenter.shared.reloadTimelines(ofKind: "LifeformWidget")
+}
 
 extension AsyncSequence {
     func collect() async throws -> [Element] {
@@ -60,6 +81,7 @@ struct SummaryReportScene: DeviceActivityReportScene {
             var categorySummaries: [String: CategorySummary] = [:]
 
             let devices = try await data.collect()
+            print("[ScreenTime] Extension devices: \(devices.count)")
 
             for deviceData in devices {
                 let segments = try await deviceData.activitySegments.collect()
@@ -93,17 +115,29 @@ struct SummaryReportScene: DeviceActivityReportScene {
                 }
             }
 
-            return ActivitySummary(
+            print("[ScreenTime] Extension segmentCount: \(segmentCount)")
+            print("[ScreenTime] Extension totalActivityDuration: \(totalActivityDuration)")
+
+            let summary = ActivitySummary(
                 totalMinutes: totalActivityDuration / 60,
                 segmentCount: segmentCount,
                 categorySummaries: categorySummaries.values.sorted { $0.totalMinutes > $1.totalMinutes }
             )
+
+            print("[ScreenTime] Extension totalMinutes: \(summary.totalMinutes)")
+            persistTotalScreenTime(summary.totalMinutes)
+            return summary
         } catch {
-            return ActivitySummary(
+            print("[ScreenTime] Extension failed to compute summary: \(error)")
+            let summary = ActivitySummary(
                 totalMinutes: 0,
                 segmentCount: 0,
                 categorySummaries: []
             )
+
+            print("[ScreenTime] Extension totalMinutes: \(summary.totalMinutes)")
+            persistTotalScreenTime(summary.totalMinutes)
+            return summary
         }
     }
 }

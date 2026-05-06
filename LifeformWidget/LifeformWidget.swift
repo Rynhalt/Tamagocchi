@@ -31,6 +31,19 @@ private let lifeformWidgetStateKey = "LifeformWidgetState"
 private let lifeformTimerEndDateKey = "LifeformWidgetTimerEndDate"
 private let lifeformTimerDurationKey = "LifeformWidgetTimerDurationMinutes"
 private let lifeformSelectionKey = "LifeformTimerSelectionData"
+private let lifeformScreenTimeMinutesKey = "LifeformScreenTimeMinutes"
+
+private func formattedScreenTime(minutes: Double) -> String {
+    guard minutes > 0 else {
+        return "0分"
+    }
+
+    if minutes >= 60 {
+        return String(format: "%.1f時間", minutes / 60)
+    } else {
+        return String(format: "%.0f分", minutes.rounded())
+    }
+}
 
 enum CharacterKind: String, Codable {
     case green
@@ -48,6 +61,74 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
     let stepCount: Int
     let showReport: Bool
     let selectedCharacter: CharacterKind
+    let screenTimeMinutes: Double
+
+    init(
+        authorizationStatusText: String,
+        authorizationMessage: String,
+        selectionMessage: String,
+        selectedApps: Int,
+        selectedCategories: Int,
+        selectedWebDomains: Int,
+        stepCount: Int,
+        showReport: Bool,
+        selectedCharacter: CharacterKind,
+        screenTimeMinutes: Double = 0
+    ) {
+        self.authorizationStatusText = authorizationStatusText
+        self.authorizationMessage = authorizationMessage
+        self.selectionMessage = selectionMessage
+        self.selectedApps = selectedApps
+        self.selectedCategories = selectedCategories
+        self.selectedWebDomains = selectedWebDomains
+        self.stepCount = stepCount
+        self.showReport = showReport
+        self.selectedCharacter = selectedCharacter
+        self.screenTimeMinutes = screenTimeMinutes
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case authorizationStatusText
+        case authorizationMessage
+        case selectionMessage
+        case selectedApps
+        case selectedCategories
+        case selectedWebDomains
+        case stepCount
+        case showReport
+        case selectedCharacter
+        case screenTimeMinutes
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            authorizationStatusText: try container.decode(String.self, forKey: .authorizationStatusText),
+            authorizationMessage: try container.decode(String.self, forKey: .authorizationMessage),
+            selectionMessage: try container.decode(String.self, forKey: .selectionMessage),
+            selectedApps: try container.decode(Int.self, forKey: .selectedApps),
+            selectedCategories: try container.decode(Int.self, forKey: .selectedCategories),
+            selectedWebDomains: try container.decode(Int.self, forKey: .selectedWebDomains),
+            stepCount: try container.decode(Int.self, forKey: .stepCount),
+            showReport: try container.decode(Bool.self, forKey: .showReport),
+            selectedCharacter: try container.decode(CharacterKind.self, forKey: .selectedCharacter),
+            screenTimeMinutes: try container.decodeIfPresent(Double.self, forKey: .screenTimeMinutes) ?? 0
+        )
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(authorizationStatusText, forKey: .authorizationStatusText)
+        try container.encode(authorizationMessage, forKey: .authorizationMessage)
+        try container.encode(selectionMessage, forKey: .selectionMessage)
+        try container.encode(selectedApps, forKey: .selectedApps)
+        try container.encode(selectedCategories, forKey: .selectedCategories)
+        try container.encode(selectedWebDomains, forKey: .selectedWebDomains)
+        try container.encode(stepCount, forKey: .stepCount)
+        try container.encode(showReport, forKey: .showReport)
+        try container.encode(selectedCharacter, forKey: .selectedCharacter)
+        try container.encode(screenTimeMinutes, forKey: .screenTimeMinutes)
+    }
 
     static let placeholder = LifeformWidgetStateSnapshot(
         authorizationStatusText: "未確認",
@@ -58,7 +139,8 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
         selectedWebDomains: 0,
         stepCount: 0,
         showReport: false,
-        selectedCharacter: .blue
+        selectedCharacter: .blue,
+        screenTimeMinutes: 0
     )
 
     var selectedItemCount: Int {
@@ -70,11 +152,11 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
     }
 
     var digitalPenalty: Double {
-        min(1.0, Double(selectedItemCount) / 10.0)
+        min(1.0, screenTimeMinutes / 240.0)
     }
 
     var digitalStatusText: String {
-        switch (authorizationStatusText, selectedItemCount > 0) {
+        switch (authorizationStatusText, screenTimeMinutes > 0) {
         case ("Approved", true):
             return "スマホ負担あり"
         case ("Approved", false):
@@ -82,6 +164,10 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
         default:
             return "スクリーンタイム未許可"
         }
+    }
+
+    var screenTimeDisplayText: String {
+        formattedScreenTime(minutes: screenTimeMinutes)
     }
 
     var physicalTag: String {
@@ -109,6 +195,21 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
     var overallScore: Int {
         let score = (physicalScore * 70.0) + ((1.0 - digitalPenalty) * 30.0)
         return Int(max(0, min(100, score)).rounded())
+    }
+
+    func updating(screenTimeMinutes: Double) -> LifeformWidgetStateSnapshot {
+        LifeformWidgetStateSnapshot(
+            authorizationStatusText: authorizationStatusText,
+            authorizationMessage: authorizationMessage,
+            selectionMessage: selectionMessage,
+            selectedApps: selectedApps,
+            selectedCategories: selectedCategories,
+            selectedWebDomains: selectedWebDomains,
+            stepCount: stepCount,
+            showReport: showReport,
+            selectedCharacter: selectedCharacter,
+            screenTimeMinutes: screenTimeMinutes
+        )
     }
 }
 
@@ -314,7 +415,8 @@ private struct LifeformWidgetProvider: TimelineProvider {
             return .placeholder
         }
 
-        return snapshot
+        let screenTimeMinutes = defaults.double(forKey: lifeformScreenTimeMinutesKey)
+        return snapshot.updating(screenTimeMinutes: screenTimeMinutes)
     }
 }
 
@@ -543,7 +645,7 @@ private struct LifeformWidgetEntryView: View {
                             iconColor: GrowmiWidgetTheme.warmOrange,
                             iconSize: 18,
                             title: "SNS利用時間",
-                            value: "0分"
+                            value: snapshot.screenTimeDisplayText
                         )
                             .offset(x: 5, y: 0)
                         MediumStatRow(
@@ -663,7 +765,7 @@ private struct LifeformWidgetEntryView: View {
                                 iconColor: GrowmiWidgetTheme.warmOrange,
                                 iconSize: 17,
                                 title: "SNS利用時間",
-                                value: "0分"
+                                value: snapshot.screenTimeDisplayText
                             )
                         }
 

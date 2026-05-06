@@ -15,6 +15,8 @@ import SwiftUI
 private let lifeformAppGroupID = "group.com.marcus.Growmi"
 private let lifeformWidgetStateKey = "LifeformWidgetState"
 private let lifeformSelectionKey = "LifeformTimerSelectionData"
+private let lifeformScreenTimeMinutesKey = "LifeformScreenTimeMinutes"
+private let lifeformScreenTimeUpdatedAtKey = "LifeformScreenTimeUpdatedAt"
 
 enum CharacterKind: String, CaseIterable, Codable, Identifiable {
     case green
@@ -152,6 +154,7 @@ private enum AppSection: String, CaseIterable, Identifiable {
 }
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var authorizationCenter = AuthorizationCenter.shared
     private let healthStore = HKHealthStore()
 
@@ -161,6 +164,10 @@ struct ContentView: View {
     @State private var selectionMessage = "まだ何も選ばれてないよ"
     @State private var showReport = false
     @State private var stepCountMessage = "歩数はまだ読み込まれてないよ"
+    @State private var screenTimeMinutes: Double = 0
+    @State private var screenTimeUpdatedAt: TimeInterval = 0
+    @State private var screenTimeReadSucceeded = false
+    @State private var didLoadTodayStepCount = false
     @State private var selectedCharacter: CharacterKind = .blue
     @State private var selectedSection: AppSection = .home
 
@@ -175,6 +182,13 @@ struct ContentView: View {
 
             currentSectionView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .background {
+            DeviceActivityReport(reportContext)
+                .frame(width: 1, height: 1)
+                .opacity(0.01)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
         }
         .overlay(alignment: .bottom) {
             BottomNavigationBar(
@@ -193,7 +207,11 @@ struct ContentView: View {
         }
         .onAppear {
             loadSelectionFromSharedStorage()
-            syncWidgetStateToWidget()
+            Task { await refreshAppMetrics() }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            Task { await refreshAppMetrics() }
         }
     }
 
@@ -211,6 +229,7 @@ struct ContentView: View {
                 digitalPenalty: digitalPenalty,
                 physicalTag: physicalTag,
                 digitalStatusText: digitalStatusText,
+                screenTimeDisplayText: screenTimeDisplayText,
                 selectedCharacter: selectedCharacter
             )
         case .settings:
@@ -223,6 +242,11 @@ struct ContentView: View {
                 selectedWebDomains: selection.webDomainTokens.count,
                 showReport: showReport,
                 stepCountMessage: stepCountMessage,
+                screenTimeDisplayText: screenTimeDisplayText,
+                screenTimeMinutes: screenTimeMinutes,
+                screenTimeUpdatedAtText: screenTimeUpdatedAtText,
+                screenTimeReadStatusText: screenTimeReadStatusText,
+                screenTimeReadSucceeded: screenTimeReadSucceeded,
                 selectedCharacter: $selectedCharacter,
                 requestScreenTimeAccess: {
                     Task {
@@ -234,6 +258,13 @@ struct ContentView: View {
                 },
                 toggleReport: {
                     showReport.toggle()
+                    Task { @MainActor in
+                        for delay in [300_000_000, 800_000_000, 1_500_000_000] {
+                            try? await Task.sleep(nanoseconds: UInt64(delay))
+                            reloadScreenTimeMinutesFromSharedStorage()
+                            syncWidgetStateToWidget()
+                        }
+                    }
                 },
                 loadTodaySteps: {
                     Task {
@@ -252,8 +283,85 @@ struct ContentView: View {
         selection.applicationTokens.count + selection.categoryTokens.count + selection.webDomainTokens.count
     }
 
+    private var screenTimeDisplayText: String {
+        formattedScreenTime(minutes: screenTimeMinutes)
+    }
+
+    private var screenTimeReadStatusText: String {
+        screenTimeReadSucceeded ? "成功" : "失敗"
+    }
+
+    private var screenTimeUpdatedAtText: String {
+        guard screenTimeUpdatedAt > 0 else {
+            return "未更新"
+        }
+
+        return Date(timeIntervalSince1970: screenTimeUpdatedAt).formatted(date: .abbreviated, time: .standard)
+    }
+
+    @MainActor
+    private func refreshScreenTimeFromReport() async {
+        reloadScreenTimeMinutesFromSharedStorage()
+        syncWidgetStateToWidget()
+
+        for delay in [300_000_000, 800_000_000, 1_500_000_000] {
+            try? await Task.sleep(nanoseconds: UInt64(delay))
+            reloadScreenTimeMinutesFromSharedStorage()
+            syncWidgetStateToWidget()
+        }
+    }
+
+    @MainActor
+    private func loadTodayStepCountIfNeeded() async {
+        guard !didLoadTodayStepCount else {
+            return
+        }
+
+        didLoadTodayStepCount = true
+        await loadTodayStepCount()
+    }
+
+    @MainActor
+    private func reloadScreenTimeMinutesFromSharedStorage() {
+        let readTimestamp = Date()
+
+        guard let defaults = UserDefaults(suiteName: lifeformAppGroupID) else {
+            screenTimeReadSucceeded = false
+            print("[ScreenTime] Main app failed to open App Group defaults at \(readTimestamp)")
+            return
+        }
+
+        screenTimeReadSucceeded = true
+        print("[ScreenTime] Main app opened App Group defaults at \(readTimestamp)")
+
+        let minutes = defaults.double(forKey: lifeformScreenTimeMinutesKey)
+        let updatedAt = defaults.double(forKey: lifeformScreenTimeUpdatedAtKey)
+        print("[ScreenTime] Main app read minutes: \(minutes)")
+
+        if updatedAt > 0 {
+            print("[ScreenTime] Main app read updatedAt: \(Date(timeIntervalSince1970: updatedAt))")
+        } else {
+            print("[ScreenTime] Main app found no updatedAt value")
+        }
+
+        screenTimeMinutes = minutes
+        screenTimeUpdatedAt = updatedAt
+    }
+
+    private func formattedScreenTime(minutes: Double) -> String {
+        guard minutes > 0 else {
+            return "0分"
+        }
+
+        if minutes >= 60 {
+            return String(format: "%.1f時間", minutes / 60)
+        } else {
+            return String(format: "%.0f分", minutes.rounded())
+        }
+    }
+
     private var digitalPenalty: Double {
-        min(1.0, Double(selectedItemCount) / 10.0)
+        min(1.0, screenTimeMinutes / 240.0)
     }
 
     private var physicalLevel: Double {
@@ -288,7 +396,7 @@ struct ContentView: View {
     }
 
     private var digitalStatusText: String {
-        switch (isScreenTimeApproved, hasScreenTimeSelection) {
+        switch (isScreenTimeApproved, screenTimeMinutes > 0) {
         case (true, true):
             return "スマホ負担あり"
         case (true, false):
@@ -366,10 +474,16 @@ struct ContentView: View {
 
         return DeviceActivityFilter(
             segment: .daily(during: interval),
-            applications: selection.applicationTokens,
-            categories: selection.categoryTokens,
-            webDomains: selection.webDomainTokens
+            applications: [],
+            categories: [],
+            webDomains: []
         )
+    }
+
+    @MainActor
+    private func refreshAppMetrics() async {
+        await loadTodayStepCountIfNeeded()
+        await refreshScreenTimeFromReport()
     }
 
     private func syncWidgetStateToWidget() {
@@ -381,6 +495,7 @@ struct ContentView: View {
             selectedCategories: selection.categoryTokens.count,
             selectedWebDomains: selection.webDomainTokens.count,
             stepCount: parsedStepCount,
+            screenTimeMinutes: screenTimeMinutes,
             showReport: showReport,
             selectedCharacter: selectedCharacter
         )
@@ -423,6 +538,7 @@ private struct LifeformWidgetStateSnapshot: Codable {
     let selectedCategories: Int
     let selectedWebDomains: Int
     let stepCount: Int
+    let screenTimeMinutes: Double
     let showReport: Bool
     let selectedCharacter: CharacterKind
 }
@@ -437,6 +553,7 @@ private struct CreaturePage: View {
     let digitalPenalty: Double
     let physicalTag: String
     let digitalStatusText: String
+    let screenTimeDisplayText: String
     let selectedCharacter: CharacterKind
 
     private var overallScore: Int {
@@ -499,7 +616,7 @@ private struct CreaturePage: View {
                         iconName: "clock",
                         iconColor: GrowmiTheme.warmOrange,
                         title: "SNS利用時間",
-                        value: "0分",
+                        value: screenTimeDisplayText,
                         borderColor: selectedCharacter.appLineColor
                     )
 
@@ -725,6 +842,11 @@ private struct SettingsPage: View {
     let selectedWebDomains: Int
     let showReport: Bool
     let stepCountMessage: String
+    let screenTimeDisplayText: String
+    let screenTimeMinutes: Double
+    let screenTimeUpdatedAtText: String
+    let screenTimeReadStatusText: String
+    let screenTimeReadSucceeded: Bool
     @Binding var selectedCharacter: CharacterKind
     let requestScreenTimeAccess: () -> Void
     let openFamilyActivityPicker: () -> Void
@@ -743,8 +865,19 @@ private struct SettingsPage: View {
                     subtitle: "権限や選択をまとめて整えるよ。"
                 )
 
+                MetricRow(title: "今日のスマホ時間", value: screenTimeDisplayText)
+
                 CharacterSelectionPanel(selectedCharacter: $selectedCharacter)
                     .border(GrowmiTheme.debugBorder, width: 1)
+
+                ScreenTimeDebugPanel(
+                    authorizationStatusText: authorizationStatusText,
+                    screenTimeMinutes: screenTimeMinutes,
+                    screenTimeUpdatedAtText: screenTimeUpdatedAtText,
+                    readStatusText: screenTimeReadStatusText,
+                    appGroupReadSucceeded: screenTimeReadSucceeded
+                )
+                .border(GrowmiTheme.debugBorder, width: 1)
 
                 ActionPanel(
                     requestScreenTimeAccess: requestScreenTimeAccess,
@@ -769,16 +902,6 @@ private struct SettingsPage: View {
                 )
                 .border(GrowmiTheme.debugBorder, width: 1)
 
-                if showReport {
-                    ReportSection(
-                        authorizationStatusText: authorizationStatusText,
-                        selectionMessage: selectionMessage,
-                        physicalTag: "設定",
-                        reportContext: reportContext,
-                        reportFilter: reportFilter
-                    )
-                    .border(GrowmiTheme.debugBorder, width: 1)
-                }
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 24)
@@ -1339,6 +1462,36 @@ private struct DebugStatusPanel: View {
                 MetricRow(title: "レポート表示", value: showReport ? "表示中" : "非表示")
                 MetricRow(title: "歩数メッセージ", value: stepCountMessage)
             }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(GrowmiTheme.card)
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(GrowmiTheme.debugBorder.opacity(0.8), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+    }
+}
+
+private struct ScreenTimeDebugPanel: View {
+    let authorizationStatusText: String
+    let screenTimeMinutes: Double
+    let screenTimeUpdatedAtText: String
+    let readStatusText: String
+    let appGroupReadSucceeded: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Screen Time デバッグ")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundStyle(GrowmiTheme.textPrimary)
+
+            MetricRow(title: "許可状態", value: localizedAuthorizationStatusText(authorizationStatusText))
+            MetricRow(title: "共有分数", value: String(format: "%.1f分", screenTimeMinutes))
+            MetricRow(title: "最終更新", value: screenTimeUpdatedAtText)
+            MetricRow(title: "App Group 読み取り", value: appGroupReadSucceeded ? "成功" : "失敗")
+            MetricRow(title: "読み取り状態", value: readStatusText)
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .topLeading)
