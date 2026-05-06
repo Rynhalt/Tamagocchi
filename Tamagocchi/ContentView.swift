@@ -130,12 +130,15 @@ private func localizedAuthorizationStatusText(_ text: String) -> String {
 
 private enum AppSection: String, CaseIterable, Identifiable {
     case home
+    case character
     case settings
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .character:
+            return "キャラ"
         case .settings:
             return "設定"
         case .home:
@@ -145,6 +148,8 @@ private enum AppSection: String, CaseIterable, Identifiable {
 
     var iconName: String {
         switch self {
+        case .character:
+            return "person.crop.square"
         case .settings:
             return "gearshape"
         case .home:
@@ -184,7 +189,7 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background {
-            DeviceActivityReport(reportContext)
+            DeviceActivityReport(reportContext, filter: reportFilter)
                 .frame(width: 1, height: 1)
                 .opacity(0.01)
                 .allowsHitTesting(false)
@@ -232,6 +237,8 @@ struct ContentView: View {
                 screenTimeDisplayText: screenTimeDisplayText,
                 selectedCharacter: selectedCharacter
             )
+        case .character:
+            CharacterPage(selectedCharacter: $selectedCharacter)
         case .settings:
             SettingsPage(
                 authorizationStatusText: authorizationStatusText,
@@ -247,7 +254,6 @@ struct ContentView: View {
                 screenTimeUpdatedAtText: screenTimeUpdatedAtText,
                 screenTimeReadStatusText: screenTimeReadStatusText,
                 screenTimeReadSucceeded: screenTimeReadSucceeded,
-                selectedCharacter: $selectedCharacter,
                 requestScreenTimeAccess: {
                     Task {
                         await requestScreenTimeAccess()
@@ -795,7 +801,7 @@ private struct BottomNavigationBar: View {
                         .frame(height: 1)
 
                     HStack(spacing: 0) {
-                        ForEach([AppSection.home, .settings]) { section in
+                        ForEach([AppSection.home, .character, .settings]) { section in
                             navigationItem(for: section)
                         }
                     }
@@ -847,7 +853,6 @@ private struct SettingsPage: View {
     let screenTimeUpdatedAtText: String
     let screenTimeReadStatusText: String
     let screenTimeReadSucceeded: Bool
-    @Binding var selectedCharacter: CharacterKind
     let requestScreenTimeAccess: () -> Void
     let openFamilyActivityPicker: () -> Void
     let toggleReport: () -> Void
@@ -860,16 +865,6 @@ private struct SettingsPage: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
-                PageHeader(
-                    title: "設定",
-                    subtitle: "権限や選択をまとめて整えるよ。"
-                )
-
-                MetricRow(title: "今日のスマホ時間", value: screenTimeDisplayText)
-
-                CharacterSelectionPanel(selectedCharacter: $selectedCharacter)
-                    .border(GrowmiTheme.debugBorder, width: 1)
-
                 ScreenTimeDebugPanel(
                     authorizationStatusText: authorizationStatusText,
                     screenTimeMinutes: screenTimeMinutes,
@@ -877,7 +872,19 @@ private struct SettingsPage: View {
                     readStatusText: screenTimeReadStatusText,
                     appGroupReadSucceeded: screenTimeReadSucceeded
                 )
-                .border(GrowmiTheme.debugBorder, width: 1)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("レポート")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundStyle(GrowmiTheme.textPrimary)
+
+                    DeviceActivityReport(reportContext, filter: reportFilter)
+                        .frame(height: 280)
+                }
+                .padding(18)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .background(GrowmiTheme.card)
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
 
                 ActionPanel(
                     requestScreenTimeAccess: requestScreenTimeAccess,
@@ -888,20 +895,24 @@ private struct SettingsPage: View {
                     selection: $selection,
                     showReport: showReport
                 )
-                .border(GrowmiTheme.debugBorder, width: 1)
 
-                DebugStatusPanel(
-                    authorizationStatusText: authorizationStatusText,
-                    authorizationMessage: authorizationMessage,
-                    selectionMessage: selectionMessage,
-                    selectedApps: selectedApps,
-                    selectedCategories: selectedCategories,
-                    selectedWebDomains: selectedWebDomains,
-                    showReport: showReport,
-                    stepCountMessage: stepCountMessage
-                )
-                .border(GrowmiTheme.debugBorder, width: 1)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 24)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear.frame(height: 104)
+        }
+    }
+}
 
+private struct CharacterPage: View {
+    @Binding var selectedCharacter: CharacterKind
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 16) {
+                CharacterSelectionPanel(selectedCharacter: $selectedCharacter)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 24)
@@ -932,10 +943,6 @@ private struct CharacterSelectionPanel: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .background(GrowmiTheme.card)
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(GrowmiTheme.debugBorder.opacity(0.8), lineWidth: 1)
-        )
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
@@ -957,10 +964,6 @@ private struct PageHeader: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .background(GrowmiTheme.card)
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(GrowmiTheme.debugBorder.opacity(0.8), lineWidth: 1)
-        )
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
@@ -997,10 +1000,6 @@ private struct MetricChip: View {
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(GrowmiTheme.card)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(GrowmiTheme.debugBorder.opacity(0.8), lineWidth: 1)
-        )
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
@@ -1161,10 +1160,6 @@ private struct CreatureCard: View {
         .padding(18)
         .frame(maxWidth: .infinity, minHeight: 360, maxHeight: 360, alignment: .topLeading)
         .background(GrowmiTheme.card)
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(GrowmiTheme.debugBorder.opacity(0.8), lineWidth: 1)
-        )
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 
@@ -1260,10 +1255,6 @@ private struct PhysicalGrowthCard: View {
         .padding(16)
         .frame(maxWidth: .infinity, minHeight: 240, alignment: .topLeading)
         .background(GrowmiTheme.card)
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(GrowmiTheme.debugBorder.opacity(0.8), lineWidth: 1)
-        )
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
@@ -1327,10 +1318,6 @@ private struct DigitalStrainCard: View {
         .padding(16)
         .frame(maxWidth: .infinity, minHeight: 240, alignment: .topLeading)
         .background(GrowmiTheme.card)
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(GrowmiTheme.debugBorder.opacity(0.8), lineWidth: 1)
-        )
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
@@ -1428,10 +1415,6 @@ private struct ActionPanel: View {
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(GrowmiTheme.card)
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(GrowmiTheme.debugBorder.opacity(0.8), lineWidth: 1)
-        )
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 }
@@ -1466,10 +1449,6 @@ private struct DebugStatusPanel: View {
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(GrowmiTheme.card)
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(GrowmiTheme.debugBorder.opacity(0.8), lineWidth: 1)
-        )
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 }
@@ -1496,10 +1475,6 @@ private struct ScreenTimeDebugPanel: View {
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(GrowmiTheme.card)
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(GrowmiTheme.debugBorder.opacity(0.8), lineWidth: 1)
-        )
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 }
@@ -1527,15 +1502,10 @@ private struct ReportSection: View {
 
             DeviceActivityReport(reportContext, filter: reportFilter)
                 .frame(height: 280)
-                .border(GrowmiTheme.debugBorder, width: 1)
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(GrowmiTheme.card)
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(GrowmiTheme.debugBorder.opacity(0.8), lineWidth: 1)
-        )
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 }
