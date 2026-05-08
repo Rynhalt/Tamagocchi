@@ -17,6 +17,12 @@ private let lifeformWidgetStateKey = "LifeformWidgetState"
 private let lifeformSelectionKey = "LifeformTimerSelectionData"
 private let lifeformScreenTimeMinutesKey = "LifeformScreenTimeMinutes"
 private let lifeformScreenTimeUpdatedAtKey = "LifeformScreenTimeUpdatedAt"
+private let growmiApproxScreenTimeMinutesKey = "GrowMiApproxScreenTimeMinutes"
+private let growmiApproxScreenTimeUpdatedAtKey = "GrowMiDigitalStrainUpdatedAt"
+private let growmiDigitalStrainLevelKey = "GrowMiDigitalStrainLevel"
+private let growmiLastThresholdEventKey = "GrowMiLastThresholdEvent"
+private let growmiDailyMonitorActivityName = DeviceActivityName("growmi.daily")
+private let growmiDailyThresholdCeilingMinutes = 1_440
 
 enum CharacterKind: String, CaseIterable, Codable, Identifiable {
     case green
@@ -162,6 +168,7 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var authorizationCenter = AuthorizationCenter.shared
     private let healthStore = HKHealthStore()
+    private let deviceActivityCenter = DeviceActivityCenter()
 
     @State private var authorizationMessage = "まだリクエストのお願いはしてないよ"
     @State private var selection = FamilyActivitySelection()
@@ -170,6 +177,7 @@ struct ContentView: View {
     @State private var showReport = false
     @State private var stepCountMessage = "歩数はまだ読み込まれてないよ"
     @State private var screenTimeMinutes: Double = 0
+    @State private var screenTimeMaxMinutesSoFar: Double = 0
     @State private var screenTimeUpdatedAt: TimeInterval = 0
     @State private var screenTimeReadSucceeded = false
     @State private var didLoadTodayStepCount = false
@@ -206,9 +214,20 @@ struct ContentView: View {
             selectionMessage = "アプリ \(newSelection.applicationTokens.count) 件、カテゴリ \(newSelection.categoryTokens.count) 件、Web \(newSelection.webDomainTokens.count) 件が選ばれたよ。"
             syncSelectionToSharedStorage()
             syncWidgetStateToWidget()
+            Task { await refreshAppMetrics() }
         }
         .onChange(of: selectedCharacter) { _, _ in
             syncWidgetStateToWidget()
+        }
+        .onChange(of: showReport) { _, isShowing in
+            guard isShowing else { return }
+
+            Task { await refreshScreenTimeFromReport() }
+        }
+        .onChange(of: selectedSection) { _, newSection in
+            guard newSection == .home else { return }
+
+            Task { await refreshScreenTimeFromReport() }
         }
         .onAppear {
             loadSelectionFromSharedStorage()
@@ -251,6 +270,7 @@ struct ContentView: View {
                 stepCountMessage: stepCountMessage,
                 screenTimeDisplayText: screenTimeDisplayText,
                 screenTimeMinutes: screenTimeMinutes,
+                screenTimeMaxMinutesSoFar: screenTimeMaxMinutesSoFar,
                 screenTimeUpdatedAtText: screenTimeUpdatedAtText,
                 screenTimeReadStatusText: screenTimeReadStatusText,
                 screenTimeReadSucceeded: screenTimeReadSucceeded,
@@ -340,9 +360,13 @@ struct ContentView: View {
         screenTimeReadSucceeded = true
         print("[ScreenTime] Main app opened App Group defaults at \(readTimestamp)")
 
-        let minutes = defaults.double(forKey: lifeformScreenTimeMinutesKey)
-        let updatedAt = defaults.double(forKey: lifeformScreenTimeUpdatedAtKey)
+        let minutes = defaults.double(forKey: growmiApproxScreenTimeMinutesKey)
+        let updatedAt = defaults.double(forKey: growmiApproxScreenTimeUpdatedAtKey)
+        let strainLevel = defaults.string(forKey: growmiDigitalStrainLevelKey) ?? "calm"
+        let thresholdEvent = defaults.string(forKey: growmiLastThresholdEventKey) ?? "none"
         print("[ScreenTime] Main app read minutes: \(minutes)")
+        print("[ScreenTime] Main app read strain level: \(strainLevel)")
+        print("[ScreenTime] Main app read event: \(thresholdEvent)")
 
         if updatedAt > 0 {
             print("[ScreenTime] Main app read updatedAt: \(Date(timeIntervalSince1970: updatedAt))")
@@ -351,7 +375,63 @@ struct ContentView: View {
         }
 
         screenTimeMinutes = minutes
+        screenTimeMaxMinutesSoFar = max(screenTimeMaxMinutesSoFar, minutes)
         screenTimeUpdatedAt = updatedAt
+    }
+
+    @MainActor
+    private func syncScreenTimeMonitoringState() {
+        if isScreenTimeApproved, hasScreenTimeSelection {
+            startScreenTimeMonitoring()
+        } else {
+            stopScreenTimeMonitoring()
+            clearApproximateScreenTimeSharedState()
+        }
+    }
+
+    private func startScreenTimeMonitoring() {
+        let schedule = DeviceActivitySchedule(
+            intervalStart: DateComponents(hour: 0, minute: 0),
+            intervalEnd: DateComponents(hour: 23, minute: 59),
+            repeats: true
+        )
+
+        var events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
+        for minutes in stride(from: 10, through: growmiDailyThresholdCeilingMinutes, by: 10) {
+            let eventName = DeviceActivityEvent.Name("growmi.usage.\(minutes)")
+            events[eventName] = DeviceActivityEvent(
+                applications: selection.applicationTokens,
+                categories: selection.categoryTokens,
+                webDomains: selection.webDomainTokens,
+                threshold: DateComponents(minute: minutes),
+                includesPastActivity: true
+            )
+        }
+
+        do {
+            deviceActivityCenter.stopMonitoring([growmiDailyMonitorActivityName])
+            try deviceActivityCenter.startMonitoring(growmiDailyMonitorActivityName, during: schedule, events: events)
+            print("[Monitor] Started monitoring with \(events.count) thresholds")
+        } catch {
+            print("[Monitor] Failed to start monitoring: \(error.localizedDescription)")
+        }
+    }
+
+    private func stopScreenTimeMonitoring() {
+        deviceActivityCenter.stopMonitoring([growmiDailyMonitorActivityName])
+        print("[Monitor] Stopped monitoring")
+    }
+
+    private func clearApproximateScreenTimeSharedState() {
+        guard let defaults = UserDefaults(suiteName: lifeformAppGroupID) else {
+            return
+        }
+
+        let now = Date().timeIntervalSince1970
+        defaults.set(0, forKey: growmiApproxScreenTimeMinutesKey)
+        defaults.set(now, forKey: growmiApproxScreenTimeUpdatedAtKey)
+        defaults.set("calm", forKey: growmiDigitalStrainLevelKey)
+        defaults.set("selection-cleared", forKey: growmiLastThresholdEventKey)
     }
 
     private func formattedScreenTime(minutes: Double) -> String {
@@ -430,6 +510,7 @@ struct ContentView: View {
         do {
             try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
             authorizationMessage = "許可のお願いが完了したよ"
+            await refreshAppMetrics()
             syncWidgetStateToWidget()
         } catch {
             authorizationMessage = "許可に失敗したよ: \(error.localizedDescription)"
@@ -489,6 +570,7 @@ struct ContentView: View {
     @MainActor
     private func refreshAppMetrics() async {
         await loadTodayStepCountIfNeeded()
+        syncScreenTimeMonitoringState()
         await refreshScreenTimeFromReport()
     }
 
@@ -850,6 +932,7 @@ private struct SettingsPage: View {
     let stepCountMessage: String
     let screenTimeDisplayText: String
     let screenTimeMinutes: Double
+    let screenTimeMaxMinutesSoFar: Double
     let screenTimeUpdatedAtText: String
     let screenTimeReadStatusText: String
     let screenTimeReadSucceeded: Bool
@@ -868,6 +951,7 @@ private struct SettingsPage: View {
                 ScreenTimeDebugPanel(
                     authorizationStatusText: authorizationStatusText,
                     screenTimeMinutes: screenTimeMinutes,
+                    screenTimeMaxMinutesSoFar: screenTimeMaxMinutesSoFar,
                     screenTimeUpdatedAtText: screenTimeUpdatedAtText,
                     readStatusText: screenTimeReadStatusText,
                     appGroupReadSucceeded: screenTimeReadSucceeded
@@ -1456,6 +1540,7 @@ private struct DebugStatusPanel: View {
 private struct ScreenTimeDebugPanel: View {
     let authorizationStatusText: String
     let screenTimeMinutes: Double
+    let screenTimeMaxMinutesSoFar: Double
     let screenTimeUpdatedAtText: String
     let readStatusText: String
     let appGroupReadSucceeded: Bool
@@ -1468,6 +1553,7 @@ private struct ScreenTimeDebugPanel: View {
 
             MetricRow(title: "許可状態", value: localizedAuthorizationStatusText(authorizationStatusText))
             MetricRow(title: "共有分数", value: String(format: "%.1f分", screenTimeMinutes))
+            MetricRow(title: "最大値", value: String(format: "%.1f分", screenTimeMaxMinutesSoFar))
             MetricRow(title: "最終更新", value: screenTimeUpdatedAtText)
             MetricRow(title: "App Group 読み取り", value: appGroupReadSucceeded ? "成功" : "失敗")
             MetricRow(title: "読み取り状態", value: readStatusText)

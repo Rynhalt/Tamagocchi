@@ -31,7 +31,7 @@ private let lifeformWidgetStateKey = "LifeformWidgetState"
 private let lifeformTimerEndDateKey = "LifeformWidgetTimerEndDate"
 private let lifeformTimerDurationKey = "LifeformWidgetTimerDurationMinutes"
 private let lifeformSelectionKey = "LifeformTimerSelectionData"
-private let lifeformScreenTimeMinutesKey = "LifeformScreenTimeMinutes"
+private let lifeformScreenTimeMinutesKey = "GrowMiApproxScreenTimeMinutes"
 
 private func formattedScreenTime(minutes: Double) -> String {
     guard minutes > 0 else {

@@ -1,26 +1,36 @@
 import Charts
 import DeviceActivity
 import Foundation
+import os
 import SwiftUI
 import WidgetKit
 
 private let lifeformAppGroupID = "group.com.marcus.Growmi"
 private let lifeformScreenTimeMinutesKey = "LifeformScreenTimeMinutes"
 private let lifeformScreenTimeUpdatedAtKey = "LifeformScreenTimeUpdatedAt"
+private let screenTimeLogger = Logger(
+    subsystem: "com.marcus.Tamagocchi",
+    category: "ScreenTimeReportExtension"
+)
 
 private func persistTotalScreenTime(_ minutes: Double) {
     guard let defaults = UserDefaults(suiteName: lifeformAppGroupID) else {
-        print("[ScreenTime] Extension failed to open App Group defaults")
+        screenTimeLogger.error("Extension failed to open App Group defaults")
         return
     }
 
     let updatedAt = Date().timeIntervalSince1970
-    print("[ScreenTime] Extension opened App Group defaults")
+    screenTimeLogger.notice("Extension opened App Group defaults")
     defaults.set(minutes, forKey: lifeformScreenTimeMinutesKey)
     defaults.set(updatedAt, forKey: lifeformScreenTimeUpdatedAtKey)
-    print("[ScreenTime] Extension wrote minutes: \(minutes)")
-    print("[ScreenTime] Extension wrote updatedAt: \(Date(timeIntervalSince1970: updatedAt))")
+    let rereadMinutes = defaults.double(forKey: lifeformScreenTimeMinutesKey)
+    let rereadUpdatedAt = defaults.double(forKey: lifeformScreenTimeUpdatedAtKey)
+    screenTimeLogger.notice("Extension wrote minutes: \(minutes, privacy: .public)")
+    screenTimeLogger.notice("Extension wrote updatedAt: \(Date(timeIntervalSince1970: updatedAt), privacy: .public)")
+    screenTimeLogger.notice("Extension reread minutes: \(rereadMinutes, privacy: .public)")
+    screenTimeLogger.notice("Extension reread updatedAt: \(Date(timeIntervalSince1970: rereadUpdatedAt), privacy: .public)")
     WidgetCenter.shared.reloadTimelines(ofKind: "LifeformWidget")
+    screenTimeLogger.notice("Extension requested widget timeline reload")
 }
 
 extension AsyncSequence {
@@ -81,7 +91,7 @@ struct SummaryReportScene: DeviceActivityReportScene {
             var categorySummaries: [String: CategorySummary] = [:]
 
             let devices = try await data.collect()
-            print("[ScreenTime] Extension devices: \(devices.count)")
+            screenTimeLogger.notice("Extension devices: \(devices.count, privacy: .public)")
 
             for deviceData in devices {
                 let segments = try await deviceData.activitySegments.collect()
@@ -115,8 +125,8 @@ struct SummaryReportScene: DeviceActivityReportScene {
                 }
             }
 
-            print("[ScreenTime] Extension segmentCount: \(segmentCount)")
-            print("[ScreenTime] Extension totalActivityDuration: \(totalActivityDuration)")
+            screenTimeLogger.notice("Extension segmentCount: \(segmentCount, privacy: .public)")
+            screenTimeLogger.notice("Extension totalActivityDuration: \(totalActivityDuration, privacy: .public)")
 
             let summary = ActivitySummary(
                 totalMinutes: totalActivityDuration / 60,
@@ -124,18 +134,18 @@ struct SummaryReportScene: DeviceActivityReportScene {
                 categorySummaries: categorySummaries.values.sorted { $0.totalMinutes > $1.totalMinutes }
             )
 
-            print("[ScreenTime] Extension totalMinutes: \(summary.totalMinutes)")
+            screenTimeLogger.notice("Extension totalMinutes: \(summary.totalMinutes, privacy: .public)")
             persistTotalScreenTime(summary.totalMinutes)
             return summary
         } catch {
-            print("[ScreenTime] Extension failed to compute summary: \(error)")
+            screenTimeLogger.error("Extension failed to compute summary: \(error.localizedDescription, privacy: .public)")
             let summary = ActivitySummary(
                 totalMinutes: 0,
                 segmentCount: 0,
                 categorySummaries: []
             )
 
-            print("[ScreenTime] Extension totalMinutes: \(summary.totalMinutes)")
+            screenTimeLogger.notice("Extension totalMinutes: \(summary.totalMinutes, privacy: .public)")
             persistTotalScreenTime(summary.totalMinutes)
             return summary
         }

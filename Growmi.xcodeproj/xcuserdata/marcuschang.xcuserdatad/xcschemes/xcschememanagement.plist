@@ -24,6 +24,11 @@
 			<key>orderHint</key>
 			<integer>1</integer>
 		</dict>
+		<key>TamagocchiMonitorExtension.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>5</integer>
+		</dict>
 		<key>TamagocchiReportExtension.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>

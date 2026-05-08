@@ -11,6 +11,7 @@
 		2D28C17E2F940CE9005FB1B5 /* design.md in Resources */ = {isa = PBXBuildFile; fileRef = 2D28C17D2F940CE9005FB1B5 /* design.md */; };
 		5A28C1092F94021C005FB1B5 /* TamagocchiReportExtension.appex in CopyFiles */ = {isa = PBXBuildFile; fileRef = 5A28C1002F94021C005FB1B5 /* TamagocchiReportExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		9A1000102F97001000B8BB97 /* LifeformWidget.appex in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9A1000012F97000100B8BB97 /* LifeformWidget.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		D1A000032F00000300B8BB97 /* TamagocchiMonitorExtension.appex in CopyFiles */ = {isa = PBXBuildFile; fileRef = D1A000022F00000200B8BB97 /* TamagocchiMonitorExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,6 +29,13 @@
 			remoteGlobalIDString = 9A1000032F97000300B8BB97;
 			remoteInfo = LifeformWidget;
 		};
+		D1A000042F00000400B8BB97 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2D28C14A2F94021C005FB1B5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D1A000062F00000600B8BB97;
+			remoteInfo = TamagocchiMonitorExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -39,6 +47,7 @@
 			files = (
 				5A28C1092F94021C005FB1B5 /* TamagocchiReportExtension.appex in CopyFiles */,
 				9A1000102F97001000B8BB97 /* LifeformWidget.appex in CopyFiles */,
+				D1A000032F00000300B8BB97 /* TamagocchiMonitorExtension.appex in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -50,6 +59,7 @@
 		2D28C17D2F940CE9005FB1B5 /* design.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = design.md; sourceTree = "<group>"; };
 		5A28C1002F94021C005FB1B5 /* TamagocchiReportExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TamagocchiReportExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A1000012F97000100B8BB97 /* LifeformWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LifeformWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		D1A000022F00000200B8BB97 /* TamagocchiMonitorExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TamagocchiMonitorExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -66,6 +76,13 @@
 				Info.plist,
 			);
 			target = 9A1000032F97000300B8BB97 /* LifeformWidget */;
+		};
+		D1A0000D2F00000D00B8BB97 /* Exceptions for "TamagocchiMonitorExtension" folder in "TamagocchiMonitorExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D1A000062F00000600B8BB97 /* TamagocchiMonitorExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -89,6 +106,14 @@
 				9A1000132F97001300B8BB97 /* Exceptions for "LifeformWidget" folder in "LifeformWidget" target */,
 			);
 			path = LifeformWidget;
+			sourceTree = "<group>";
+		};
+		D1A000012F00000100B8BB97 /* TamagocchiMonitorExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D1A0000D2F00000D00B8BB97 /* Exceptions for "TamagocchiMonitorExtension" folder in "TamagocchiMonitorExtension" target */,
+			);
+			path = TamagocchiMonitorExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -115,6 +140,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1A0000B2F00000B00B8BB97 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -125,6 +157,7 @@
 				2D28C1542F94021C005FB1B5 /* Tamagocchi */,
 				5A28C1012F94021C005FB1B5 /* TamagocchiReportExtension */,
 				9A1000022F97000200B8BB97 /* LifeformWidget */,
+				D1A000012F00000100B8BB97 /* TamagocchiMonitorExtension */,
 				2D28C1532F94021C005FB1B5 /* Products */,
 				2D28C17D2F940CE9005FB1B5 /* design.md */,
 			);
@@ -136,6 +169,7 @@
 				2D28C1522F94021C005FB1B5 /* GrowMi.app */,
 				5A28C1002F94021C005FB1B5 /* TamagocchiReportExtension.appex */,
 				9A1000012F97000100B8BB97 /* LifeformWidget.appex */,
+				D1A000022F00000200B8BB97 /* TamagocchiMonitorExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -157,6 +191,7 @@
 			dependencies = (
 				5A28C10C2F94021C005FB1B5 /* PBXTargetDependency */,
 				9A1000122F97001200B8BB97 /* PBXTargetDependency */,
+				D1A000052F00000500B8BB97 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				2D28C1542F94021C005FB1B5 /* Tamagocchi */,
@@ -212,6 +247,28 @@
 			productReference = 9A1000012F97000100B8BB97 /* LifeformWidget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		D1A000062F00000600B8BB97 /* TamagocchiMonitorExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D1A000072F00000700B8BB97 /* Build configuration list for PBXNativeTarget "TamagocchiMonitorExtension" */;
+			buildPhases = (
+				D1A0000A2F00000A00B8BB97 /* Sources */,
+				D1A0000B2F00000B00B8BB97 /* Frameworks */,
+				D1A0000C2F00000C00B8BB97 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D1A000012F00000100B8BB97 /* TamagocchiMonitorExtension */,
+			);
+			name = TamagocchiMonitorExtension;
+			packageProductDependencies = (
+			);
+			productName = TamagocchiMonitorExtension;
+			productReference = D1A000022F00000200B8BB97 /* TamagocchiMonitorExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -247,6 +304,7 @@
 				2D28C1512F94021C005FB1B5 /* GrowMi */,
 				5A28C1052F94021C005FB1B5 /* TamagocchiReportExtension */,
 				9A1000032F97000300B8BB97 /* LifeformWidget */,
+				D1A000062F00000600B8BB97 /* TamagocchiMonitorExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -269,6 +327,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		9A1000092F97000900B8BB97 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D1A0000C2F00000C00B8BB97 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -299,6 +364,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1A0000A2F00000A00B8BB97 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -311,6 +383,11 @@
 			isa = PBXTargetDependency;
 			target = 9A1000032F97000300B8BB97 /* LifeformWidget */;
 			targetProxy = 9A1000112F97001100B8BB97 /* PBXContainerItemProxy */;
+		};
+		D1A000052F00000500B8BB97 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D1A000062F00000600B8BB97 /* TamagocchiMonitorExtension */;
+			targetProxy = D1A000042F00000400B8BB97 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -533,6 +610,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = TamagocchiReportExtension/TamagocchiReportExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2G8T9W9K47;
@@ -557,6 +635,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = TamagocchiReportExtension/TamagocchiReportExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2G8T9W9K47;
@@ -627,6 +706,54 @@
 			};
 			name = Release;
 		};
+		D1A000082F00000800B8BB97 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = TamagocchiMonitorExtension/TamagocchiMonitorExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2G8T9W9K47;
+				EX_ENABLE_EXTENSION_POINT_GENERATION = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TamagocchiMonitorExtension/Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.marcus.Tamagocchi.MonitorExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D1A000092F00000900B8BB97 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = TamagocchiMonitorExtension/TamagocchiMonitorExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2G8T9W9K47;
+				EX_ENABLE_EXTENSION_POINT_GENERATION = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TamagocchiMonitorExtension/Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.marcus.Tamagocchi.MonitorExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -662,6 +789,15 @@
 			buildConfigurations = (
 				9A1000052F97000500B8BB97 /* Debug */,
 				9A1000062F97000600B8BB97 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D1A000072F00000700B8BB97 /* Build configuration list for PBXNativeTarget "TamagocchiMonitorExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D1A000082F00000800B8BB97 /* Debug */,
+				D1A000092F00000900B8BB97 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
