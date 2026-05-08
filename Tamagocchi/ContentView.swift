@@ -119,6 +119,17 @@ private extension CharacterKind {
             return "red_small"
         }
     }
+
+    var transparentDisplayName: String {
+        switch self {
+        case .green:
+            return "green_trans"
+        case .blue:
+            return "blue_trans"
+        case .red:
+            return "red_trans"
+        }
+    }
 }
 
 private func localizedAuthorizationStatusText(_ text: String) -> String {
@@ -904,16 +915,26 @@ private struct BottomNavigationBar: View {
 
     @ViewBuilder
     private func navigationItem(for section: AppSection) -> some View {
+        let isSelected = selectedSection == section
+        let foregroundColor = isSelected ? Color(red: 0.10, green: 0.45, blue: 0.95) : Color.black.opacity(0.55)
+
         Button {
             selectedSection = section
         } label: {
             VStack(spacing: 8) {
-                Image(systemName: section.iconName)
-                    .font(.system(size: 21, weight: .semibold))
+                if section == .character {
+                    Image(selectedCharacter.smallDisplayName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                } else {
+                    Image(systemName: section.iconName)
+                        .font(.system(size: 21, weight: .semibold))
+                }
                 Text(section.title)
                     .font(.system(size: 11, weight: .medium, design: .rounded))
             }
-            .foregroundStyle(selectedSection == section ? Color(red: 0.10, green: 0.45, blue: 0.95) : Color.black.opacity(0.55))
+            .foregroundStyle(foregroundColor)
             .frame(maxWidth: .infinity)
             .padding(.top, 8)
         }
@@ -992,14 +1013,71 @@ private struct SettingsPage: View {
 
 private struct CharacterPage: View {
     @Binding var selectedCharacter: CharacterKind
+    @State private var selectedCustomItem: CustomItem = .sunglasses
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
                 CharacterSelectionPanel(selectedCharacter: $selectedCharacter)
+                CharacterCustomizationPanel(
+                    selectedCharacter: selectedCharacter,
+                    selectedCustomItem: $selectedCustomItem
+                )
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 24)
+        }
+    }
+}
+
+private enum CustomItem: String, CaseIterable, Identifiable {
+    case sunglasses
+    case roundGlasses
+    case squareGlasses
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .sunglasses:
+            return "メガネ"
+        case .roundGlasses:
+            return "丸メガネ"
+        case .squareGlasses:
+            return "スクエアメガネ"
+        }
+    }
+
+    var assetName: String? {
+        switch self {
+        case .sunglasses:
+            return "glasses_normal"
+        case .roundGlasses:
+            return "glasses_round"
+        case .squareGlasses:
+            return "glasses_square"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .sunglasses:
+            return "sunglasses.fill"
+        case .roundGlasses:
+            return "eyeglasses"
+        case .squareGlasses:
+            return "eyeglasses"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .sunglasses:
+            return Color(red: 0.18, green: 0.20, blue: 0.22)
+        case .roundGlasses:
+            return Color(red: 0.18, green: 0.20, blue: 0.22)
+        case .squareGlasses:
+            return Color(red: 0.18, green: 0.20, blue: 0.22)
         }
     }
 }
@@ -1008,26 +1086,231 @@ private struct CharacterSelectionPanel: View {
     @Binding var selectedCharacter: CharacterKind
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 18) {
             Text("キャラクター選択")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundStyle(GrowmiTheme.textPrimary)
 
-            Text("デバッグ用に、表示したいキャラクターをここで切り替えるよ。")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(GrowmiTheme.textSecondary)
-
-            Picker("キャラクター", selection: $selectedCharacter) {
+            HStack(spacing: 12) {
                 ForEach(CharacterKind.allCases) { character in
-                    Text(character.displayName).tag(character)
+                    CharacterChoiceButton(
+                        character: character,
+                        isSelected: selectedCharacter == character
+                    ) {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.78)) {
+                            selectedCharacter = character
+                        }
+                    }
                 }
             }
-            .pickerStyle(.segmented)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .background(GrowmiTheme.card)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
+
+private struct CharacterChoiceButton: View {
+    let character: CharacterKind
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack(alignment: .topTrailing) {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                character.appAccentColor.opacity(0.24),
+                                character.appBackgroundBaseColor.opacity(0.88)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 76, height: 76)
+                    .overlay {
+                        Circle()
+                            .stroke(character.appLineColor.opacity(isSelected ? 0.95 : 0.38), lineWidth: isSelected ? 3 : 1)
+                    }
+                    .shadow(color: character.appAccentColor.opacity(isSelected ? 0.28 : 0.12), radius: isSelected ? 12 : 6, y: 6)
+
+                Image(character.smallDisplayName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 52, height: 52)
+                    .padding(12)
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white, character.appAccentColor)
+                        .background(Circle().fill(.white))
+                        .offset(x: 4, y: -4)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(isSelected ? character.appAccentColor.opacity(0.14) : Color.white.opacity(0.34))
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(character.appLineColor.opacity(isSelected ? 0.9 : 0.24), lineWidth: isSelected ? 2 : 1)
+            }
+            .scaleEffect(isSelected ? 1.03 : 1)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(character.displayName)を選択")
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+}
+
+private struct CharacterCustomizationPanel: View {
+    let selectedCharacter: CharacterKind
+    @Binding var selectedCustomItem: CustomItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("カスタマイズ")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundStyle(GrowmiTheme.textPrimary)
+
+            VStack(spacing: 10) {
+                ForEach(CustomItem.allCases) { item in
+                    CustomItemRow(
+                        item: item,
+                        isSelected: selectedCustomItem == item
+                    ) {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.78)) {
+                            selectedCustomItem = item
+                        }
+                    }
+                }
+            }
+
+            CharacterCustomizationPreview(
+                character: selectedCharacter,
+                item: selectedCustomItem
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(GrowmiTheme.card)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
+
+private struct CustomItemRow: View {
+    let item: CustomItem
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                CustomItemIcon(item: item, size: 38, symbolSize: 18)
+
+                Text(item.title)
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .foregroundStyle(GrowmiTheme.textPrimary)
+
+                Spacer(minLength: 8)
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(item.tint)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(isSelected ? item.tint.opacity(0.16) : Color.white.opacity(0.34))
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(item.tint.opacity(isSelected ? 0.8 : 0.18), lineWidth: isSelected ? 2 : 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(item.title)を選択")
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+}
+
+private struct CustomItemIcon: View {
+    let item: CustomItem
+    let size: CGFloat
+    let symbolSize: CGFloat
+
+    var body: some View {
+        ZStack {
+            if let assetName = item.assetName {
+                Image(assetName)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                Circle().fill(item.tint)
+
+                Image(systemName: item.symbolName)
+                    .font(.system(size: symbolSize, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+private struct CharacterCustomizationPreview: View {
+    let character: CharacterKind
+    let item: CustomItem
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            character.appBackgroundBaseColor.opacity(0.52),
+                            character.appAccentColor.opacity(0.16)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(character.appLineColor.opacity(0.24), lineWidth: 1)
+                }
+
+            VStack(spacing: 10) {
+                ZStack(alignment: .top) {
+                    Image(character.transparentDisplayName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 172)
+                        .shadow(color: character.appAccentColor.opacity(0.22), radius: 12, y: 8)
+
+                    CustomItemIcon(item: item, size: 76, symbolSize: 28)
+                        .shadow(color: item.tint.opacity(0.24), radius: 8, y: 5)
+                        .offset(x: -3, y: 64)
+                }
+
+                Text("Preview")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(GrowmiTheme.textSecondary)
+            }
+            .padding(.vertical, 18)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 250)
     }
 }
 
