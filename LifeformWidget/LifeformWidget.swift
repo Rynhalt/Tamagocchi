@@ -49,6 +49,34 @@ enum CharacterKind: String, Codable {
     case green
     case blue
     case red
+
+    var glassesPreviewOffset: CGSize {
+        switch self {
+        case .green:
+            return CGSize(width: 0, height: 64)
+        case .blue:
+            return CGSize(width: -3, height: 64)
+        case .red:
+            return CGSize(width: -1, height: 64)
+        }
+    }
+}
+
+enum CustomItem: String, Codable, Hashable {
+    case sunglasses
+    case roundGlasses
+    case squareGlasses
+
+    var assetName: String {
+        switch self {
+        case .sunglasses:
+            return "glasses_normal"
+        case .roundGlasses:
+            return "glasses_round"
+        case .squareGlasses:
+            return "glasses_square"
+        }
+    }
 }
 
 struct LifeformWidgetStateSnapshot: Codable, Hashable {
@@ -61,6 +89,7 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
     let stepCount: Int
     let showReport: Bool
     let selectedCharacter: CharacterKind
+    let selectedCustomItem: CustomItem
     let screenTimeMinutes: Double
 
     init(
@@ -73,6 +102,7 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
         stepCount: Int,
         showReport: Bool,
         selectedCharacter: CharacterKind,
+        selectedCustomItem: CustomItem = .sunglasses,
         screenTimeMinutes: Double = 0
     ) {
         self.authorizationStatusText = authorizationStatusText
@@ -84,6 +114,7 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
         self.stepCount = stepCount
         self.showReport = showReport
         self.selectedCharacter = selectedCharacter
+        self.selectedCustomItem = selectedCustomItem
         self.screenTimeMinutes = screenTimeMinutes
     }
 
@@ -97,6 +128,7 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
         case stepCount
         case showReport
         case selectedCharacter
+        case selectedCustomItem
         case screenTimeMinutes
     }
 
@@ -112,6 +144,7 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
             stepCount: try container.decode(Int.self, forKey: .stepCount),
             showReport: try container.decode(Bool.self, forKey: .showReport),
             selectedCharacter: try container.decode(CharacterKind.self, forKey: .selectedCharacter),
+            selectedCustomItem: try container.decodeIfPresent(CustomItem.self, forKey: .selectedCustomItem) ?? .sunglasses,
             screenTimeMinutes: try container.decodeIfPresent(Double.self, forKey: .screenTimeMinutes) ?? 0
         )
     }
@@ -127,6 +160,7 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
         try container.encode(stepCount, forKey: .stepCount)
         try container.encode(showReport, forKey: .showReport)
         try container.encode(selectedCharacter, forKey: .selectedCharacter)
+        try container.encode(selectedCustomItem, forKey: .selectedCustomItem)
         try container.encode(screenTimeMinutes, forKey: .screenTimeMinutes)
     }
 
@@ -140,6 +174,7 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
         stepCount: 0,
         showReport: false,
         selectedCharacter: .blue,
+        selectedCustomItem: .sunglasses,
         screenTimeMinutes: 0
     )
 
@@ -208,6 +243,7 @@ struct LifeformWidgetStateSnapshot: Codable, Hashable {
             stepCount: stepCount,
             showReport: showReport,
             selectedCharacter: selectedCharacter,
+            selectedCustomItem: selectedCustomItem,
             screenTimeMinutes: screenTimeMinutes
         )
     }
@@ -384,6 +420,16 @@ private struct CharacterPalette {
     let backgroundBase: Color
     let lineColor: Color
     let accentColor: Color
+}
+
+private struct CustomItemImage: View {
+    let item: CustomItem
+
+    var body: some View {
+        Image(item.assetName)
+            .resizable()
+            .scaledToFit()
+    }
 }
 
 private struct LifeformWidgetEntry: TimelineEntry {
@@ -566,12 +612,21 @@ private struct LifeformWidgetEntryView: View {
                     HStack {
                         Spacer()
 
-                        Image(characterImageName)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: width * 0.5, height: height)
-                            .offset(x: +20, y: 0)
-                            .mask {
+                        ZStack(alignment: .top) {
+                            Image(characterImageName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: width * 0.5, height: height)
+
+                            CustomItemImage(item: snapshot.selectedCustomItem)
+                                .frame(width: width * 0.13, height: width * 0.13)
+                                .offset(
+                                    x: snapshot.selectedCharacter.glassesPreviewOffset.width * 0.8,
+                                    y: snapshot.selectedCharacter.glassesPreviewOffset.height * 1.12
+                                )
+                        }
+                        .offset(x: +20, y: 0)
+                        .mask {
                                 LinearGradient(
                                     stops: [
                                         .init(color: .clear, location: 0.0),
@@ -679,13 +734,22 @@ private struct LifeformWidgetEntryView: View {
                             .zIndex(1)
                             .scaleEffect(1.4)
 
-                    Image(characterImageName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: geometry.size.width * 0.75)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                        .offset(x: 40, y: 5)
-                        .mask {
+                    ZStack(alignment: .top) {
+                        Image(characterImageName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: geometry.size.width * 0.75)
+
+                        CustomItemImage(item: snapshot.selectedCustomItem)
+                            .frame(width: geometry.size.width * 0.19, height: geometry.size.width * 0.19)
+                            .offset(
+                                x: snapshot.selectedCharacter.glassesPreviewOffset.width * 1.2,
+                                y: snapshot.selectedCharacter.glassesPreviewOffset.height * 1.58
+                            )
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .offset(x: 40, y: 5)
+                    .mask {
                                 LinearGradient(
                                     stops: [
                                         .init(color: .clear, location: 0.0),

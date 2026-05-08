@@ -226,6 +226,7 @@ struct ContentView: View {
     @State private var didLoadTodayStepCount = false
     @State private var debugScore: Double = 50
     @State private var selectedCharacter: CharacterKind = .blue
+    @State private var selectedCustomItem: CustomItem = .sunglasses
     @State private var selectedSection: AppSection = .home
 
     var body: some View {
@@ -261,6 +262,9 @@ struct ContentView: View {
             Task { await refreshAppMetrics() }
         }
         .onChange(of: selectedCharacter) { _, _ in
+            syncWidgetStateToWidget()
+        }
+        .onChange(of: selectedCustomItem) { _, _ in
             syncWidgetStateToWidget()
         }
         .onChange(of: showReport) { _, isShowing in
@@ -299,10 +303,14 @@ struct ContentView: View {
                 digitalStatusText: digitalStatusText,
                 screenTimeDisplayText: screenTimeDisplayText,
                 debugScore: debugScore,
-                selectedCharacter: selectedCharacter
+                selectedCharacter: selectedCharacter,
+                selectedCustomItem: selectedCustomItem
             )
         case .character:
-            CharacterPage(selectedCharacter: $selectedCharacter)
+            CharacterPage(
+                selectedCharacter: $selectedCharacter,
+                selectedCustomItem: $selectedCustomItem
+            )
         case .settings:
             SettingsPage(
                 authorizationStatusText: authorizationStatusText,
@@ -639,7 +647,8 @@ struct ContentView: View {
             stepCount: parsedStepCount,
             screenTimeMinutes: screenTimeMinutes,
             showReport: showReport,
-            selectedCharacter: selectedCharacter
+            selectedCharacter: selectedCharacter,
+            selectedCustomItem: selectedCustomItem
         )
 
         guard let defaults = UserDefaults(suiteName: lifeformAppGroupID),
@@ -683,6 +692,7 @@ private struct LifeformWidgetStateSnapshot: Codable {
     let screenTimeMinutes: Double
     let showReport: Bool
     let selectedCharacter: CharacterKind
+    let selectedCustomItem: CustomItem
 }
 
 private struct CreaturePage: View {
@@ -698,6 +708,7 @@ private struct CreaturePage: View {
     let screenTimeDisplayText: String
     let debugScore: Double
     let selectedCharacter: CharacterKind
+    let selectedCustomItem: CustomItem
 
     private var currentScore: Int {
         Int(max(0, min(100, debugScore)).rounded())
@@ -709,7 +720,7 @@ private struct CreaturePage: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Image(selectedCharacter.moodImageName(for: currentScore))
+            Image(selectedCharacter.displayName)
                 .resizable()
                 .scaledToFit()
                 .frame(maxWidth: .infinity, alignment: .top)
@@ -726,7 +737,7 @@ private struct CreaturePage: View {
                         startPoint: .top,
                         endPoint: .bottom
                     )
-                }
+            }
 
             HStack(alignment: .center, spacing: 6) {
                 VStack(spacing: 10) {
@@ -1082,7 +1093,7 @@ private struct SettingsPage: View {
 
 private struct CharacterPage: View {
     @Binding var selectedCharacter: CharacterKind
-    @State private var selectedCustomItem: CustomItem = .sunglasses
+    @Binding var selectedCustomItem: CustomItem
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -1099,7 +1110,7 @@ private struct CharacterPage: View {
     }
 }
 
-private enum CustomItem: String, CaseIterable, Identifiable {
+private enum CustomItem: String, CaseIterable, Codable, Identifiable {
     case sunglasses
     case roundGlasses
     case squareGlasses
@@ -1369,7 +1380,7 @@ private struct CharacterCustomizationPreview: View {
 
                     CustomItemIcon(item: item, size: 76, symbolSize: 28)
                         .shadow(color: item.tint.opacity(0.24), radius: 8, y: 5)
-                        .offset(x: -3, y: 64)
+                        .offset(x: character.glassesPreviewOffset.width, y: character.glassesPreviewOffset.height)
                 }
 
                 Text("Preview")
