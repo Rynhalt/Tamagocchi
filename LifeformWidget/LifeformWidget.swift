@@ -60,6 +60,33 @@ enum CharacterKind: String, Codable {
             return CGSize(width: -1, height: 64)
         }
     }
+
+    var widgetMediumGlassesLayout: WidgetGlassesOverlayLayout {
+        switch self {
+        case .green:
+            return WidgetGlassesOverlayLayout(sizeMultiplier: 0.2, offset: CGSize(width: 0, height: 62))
+        case .blue:
+            return WidgetGlassesOverlayLayout(sizeMultiplier: 0.2, offset: CGSize(width: 0, height: 59))
+        case .red:
+            return WidgetGlassesOverlayLayout(sizeMultiplier: 0.18, offset: CGSize(width: -0.5, height: 64))
+        }
+    }
+
+    var widgetLargeGlassesLayout: WidgetGlassesOverlayLayout {
+        switch self {
+        case .green:
+            return WidgetGlassesOverlayLayout(sizeMultiplier: 0.3, offset: CGSize(width: 0, height: 98))
+        case .blue:
+            return WidgetGlassesOverlayLayout(sizeMultiplier: 0.3, offset: CGSize(width: 0, height: 92))
+        case .red:
+            return WidgetGlassesOverlayLayout(sizeMultiplier: 0.28, offset: CGSize(width: -1.2, height: 98))
+        }
+    }
+}
+
+struct WidgetGlassesOverlayLayout: Hashable {
+    let sizeMultiplier: CGFloat
+    let offset: CGSize
 }
 
 enum CustomItem: String, Codable, Hashable {
@@ -607,6 +634,8 @@ private struct LifeformWidgetEntryView: View {
             GeometryReader { geometry in
                 let width = geometry.size.width
                 let height = geometry.size.height
+                let glassesLayout = snapshot.selectedCharacter.widgetMediumGlassesLayout
+                let glassesSize = width * glassesLayout.sizeMultiplier
 
                 ZStack {
                     HStack {
@@ -619,10 +648,10 @@ private struct LifeformWidgetEntryView: View {
                                 .frame(width: width * 0.5, height: height)
 
                             CustomItemImage(item: snapshot.selectedCustomItem)
-                                .frame(width: width * 0.13, height: width * 0.13)
+                                .frame(width: glassesSize, height: glassesSize)
                                 .offset(
-                                    x: snapshot.selectedCharacter.glassesPreviewOffset.width * 0.8,
-                                    y: snapshot.selectedCharacter.glassesPreviewOffset.height * 1.12
+                                    x: glassesLayout.offset.width,
+                                    y: glassesLayout.offset.height
                                 )
                         }
                         .offset(x: +20, y: 0)
@@ -720,6 +749,9 @@ private struct LifeformWidgetEntryView: View {
 
         private var largeScene: some View {
             GeometryReader { geometry in
+                let glassesLayout = snapshot.selectedCharacter.widgetLargeGlassesLayout
+                let glassesSize = geometry.size.width * glassesLayout.sizeMultiplier
+
                 VStack(spacing: 6) {
                     ZStack(alignment: .topLeading) {
                         Color.clear
@@ -741,10 +773,10 @@ private struct LifeformWidgetEntryView: View {
                             .frame(width: geometry.size.width * 0.75)
 
                         CustomItemImage(item: snapshot.selectedCustomItem)
-                            .frame(width: geometry.size.width * 0.19, height: geometry.size.width * 0.19)
+                            .frame(width: glassesSize, height: glassesSize)
                             .offset(
-                                x: snapshot.selectedCharacter.glassesPreviewOffset.width * 1.2,
-                                y: snapshot.selectedCharacter.glassesPreviewOffset.height * 1.58
+                                x: glassesLayout.offset.width,
+                                y: glassesLayout.offset.height
                             )
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)

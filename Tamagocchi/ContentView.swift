@@ -141,6 +141,22 @@ private extension CharacterKind {
             return CGSize(width: -1, height: 64)
         }
     }
+
+    var homeGlassesLayout: GlassesOverlayLayout {
+        switch self {
+        case .green:
+            return GlassesOverlayLayout(size: 180, offset: CGSize(width: 0, height: 170))
+        case .blue:
+            return GlassesOverlayLayout(size: 180, offset: CGSize(width: 0, height: 160))
+        case .red:
+            return GlassesOverlayLayout(size: 170, offset: CGSize(width: -1, height: 174))
+        }
+    }
+}
+
+private struct GlassesOverlayLayout {
+    let size: CGFloat
+    let offset: CGSize
 }
 
 private func localizedAuthorizationStatusText(_ text: String) -> String {
@@ -709,11 +725,11 @@ private struct CreaturePage: View {
                         )
                     }
 
-                CustomItemIcon(item: selectedCustomItem, size: 118, symbolSize: 40)
+                CustomItemIcon(item: selectedCustomItem, size: selectedCharacter.homeGlassesLayout.size, symbolSize: 40)
                     .shadow(color: selectedCustomItem.tint.opacity(0.24), radius: 8, y: 5)
                     .offset(
-                        x: selectedCharacter.glassesPreviewOffset.width * 1.4,
-                        y: selectedCharacter.glassesPreviewOffset.height * 2.72
+                        x: selectedCharacter.homeGlassesLayout.offset.width,
+                        y: selectedCharacter.homeGlassesLayout.offset.height
                     )
             }
 
