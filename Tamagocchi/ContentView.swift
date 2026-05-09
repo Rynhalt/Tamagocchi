@@ -131,14 +131,35 @@ private extension CharacterKind {
         }
     }
 
-    var glassesPreviewOffset: CGSize {
-        switch self {
-        case .green:
-            return CGSize(width: 0, height: 64)
-        case .blue:
-            return CGSize(width: -3, height: 64)
-        case .red:
-            return CGSize(width: -1, height: 64)
+    func moodImageName(for score: Int) -> String {
+        switch score {
+        case ..<33:
+            switch self {
+            case .green:
+                return "Green_sad"
+            case .blue:
+                return "Blue_sad"
+            case .red:
+                return "Red_sad"
+            }
+        case 33...66:
+            switch self {
+            case .green:
+                return "Green"
+            case .blue:
+                return "Blue"
+            case .red:
+                return "Red"
+            }
+        default:
+            switch self {
+            case .green:
+                return "Green_happy"
+            case .blue:
+                return "Blue_happy"
+            case .red:
+                return "Red_happy"
+            }
         }
     }
 
@@ -219,6 +240,7 @@ struct ContentView: View {
     @State private var screenTimeUpdatedAt: TimeInterval = 0
     @State private var screenTimeReadSucceeded = false
     @State private var didLoadTodayStepCount = false
+    @State private var debugScore: Double = 50
     @State private var selectedCharacter: CharacterKind = .blue
     @State private var selectedCustomItem: CustomItem = .sunglasses
     @State private var selectedSection: AppSection = .home
@@ -296,6 +318,7 @@ struct ContentView: View {
                 physicalTag: physicalTag,
                 digitalStatusText: digitalStatusText,
                 screenTimeDisplayText: screenTimeDisplayText,
+                debugScore: debugScore,
                 selectedCharacter: selectedCharacter,
                 selectedCustomItem: selectedCustomItem
             )
@@ -309,6 +332,7 @@ struct ContentView: View {
                 authorizationStatusText: authorizationStatusText,
                 authorizationMessage: authorizationMessage,
                 selectionMessage: selectionMessage,
+                debugScore: debugScore,
                 selectedApps: selection.applicationTokens.count,
                 selectedCategories: selection.categoryTokens.count,
                 selectedWebDomains: selection.webDomainTokens.count,
@@ -320,6 +344,10 @@ struct ContentView: View {
                 screenTimeUpdatedAtText: screenTimeUpdatedAtText,
                 screenTimeReadStatusText: screenTimeReadStatusText,
                 screenTimeReadSucceeded: screenTimeReadSucceeded,
+                updateDebugScore: { newValue in
+                    debugScore = newValue
+                    syncWidgetStateToWidget()
+                },
                 requestScreenTimeAccess: {
                     Task {
                         await requestScreenTimeAccess()
@@ -494,6 +522,10 @@ struct ContentView: View {
 
     private var digitalPenalty: Double {
         min(1.0, screenTimeMinutes / 240.0)
+    }
+
+    private var normalizedDebugScore: Double {
+        max(0, min(100, debugScore))
     }
 
     private var physicalLevel: Double {
@@ -690,13 +722,12 @@ private struct CreaturePage: View {
     let physicalTag: String
     let digitalStatusText: String
     let screenTimeDisplayText: String
+    let debugScore: Double
     let selectedCharacter: CharacterKind
     let selectedCustomItem: CustomItem
 
-    private var overallScore: Int {
-        let physicalScore = min(1.0, physicalLevel / 10_000.0)
-        let score = (physicalScore * 70.0) + ((1.0 - digitalPenalty) * 30.0)
-        return Int(max(0, min(100, score)).rounded())
+    private var currentScore: Int {
+        Int(max(0, min(100, debugScore)).rounded())
     }
 
     private var estimatedDistanceKilometers: Double {
@@ -753,7 +784,7 @@ private struct CreaturePage: View {
                 }
 
                 AppScoreCard(
-                    score: overallScore,
+                    score: currentScore,
                     accentColor: selectedCharacter.appAccentColor
                 )
 
@@ -993,6 +1024,7 @@ private struct SettingsPage: View {
     let authorizationStatusText: String
     let authorizationMessage: String
     let selectionMessage: String
+    let debugScore: Double
     let selectedApps: Int
     let selectedCategories: Int
     let selectedWebDomains: Int
@@ -1004,6 +1036,7 @@ private struct SettingsPage: View {
     let screenTimeUpdatedAtText: String
     let screenTimeReadStatusText: String
     let screenTimeReadSucceeded: Bool
+    let updateDebugScore: (Double) -> Void
     let requestScreenTimeAccess: () -> Void
     let openFamilyActivityPicker: () -> Void
     let toggleReport: () -> Void
@@ -1024,6 +1057,31 @@ private struct SettingsPage: View {
                     readStatusText: screenTimeReadStatusText,
                     appGroupReadSucceeded: screenTimeReadSucceeded
                 )
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("デバッグスコア")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundStyle(GrowmiTheme.textPrimary)
+
+                    Text("この値でキャラクターの気分を直接切り替えるよ。")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(GrowmiTheme.textSecondary)
+
+                    Slider(
+                        value: Binding(
+                            get: { debugScore },
+                            set: { updateDebugScore($0) }
+                        ),
+                        in: 0...100,
+                        step: 1
+                    )
+
+                    MetricRow(title: "現在値", value: "\(Int(debugScore.rounded()))")
+                }
+                .padding(18)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .background(GrowmiTheme.card)
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 12) {
                     Text("レポート")
