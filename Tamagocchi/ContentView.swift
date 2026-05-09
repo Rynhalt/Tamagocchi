@@ -173,6 +173,33 @@ private extension CharacterKind {
             }
         }
     }
+
+    var glassesPreviewOffset: CGSize {
+        switch self {
+        case .green:
+            return CGSize(width: 0, height: 64)
+        case .blue:
+            return CGSize(width: -3, height: 64)
+        case .red:
+            return CGSize(width: -1, height: 64)
+        }
+    }
+
+    var homeGlassesLayout: GlassesOverlayLayout {
+        switch self {
+        case .green:
+            return GlassesOverlayLayout(size: 180, offset: CGSize(width: 0, height: 168))
+        case .blue:
+            return GlassesOverlayLayout(size: 180, offset: CGSize(width: 0, height: 160))
+        case .red:
+            return GlassesOverlayLayout(size: 170, offset: CGSize(width: -1, height: 174))
+        }
+    }
+}
+
+private struct GlassesOverlayLayout {
+    let size: CGFloat
+    let offset: CGSize
 }
 
 private func localizedAuthorizationStatusText(_ text: String) -> String {
@@ -731,26 +758,36 @@ private struct CreaturePage: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Image(selectedCharacter.displayName)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity, alignment: .top)
-                .mask {
-                    LinearGradient(
-                        stops: [
-                            .init(color: .clear, location: 0.0),
-                            .init(color: .white.opacity(0.88), location: 0.10),
-                            .init(color: .white, location: 0.18),
-                            .init(color: .white, location: 0.82),
-                            .init(color: .white.opacity(0.88), location: 0.90),
-                            .init(color: .clear, location: 1.0)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
+            ZStack(alignment: .top) {
+                Image(selectedCharacter.displayName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, alignment: .top)
+                    .offset(y: 18)
+                    .mask {
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0.0),
+                                .init(color: .white.opacity(0.88), location: 0.10),
+                                .init(color: .white, location: 0.18),
+                                .init(color: .white, location: 0.82),
+                                .init(color: .white.opacity(0.88), location: 0.90),
+                                .init(color: .clear, location: 1.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    }
+
+                CustomItemIcon(item: selectedCustomItem, size: selectedCharacter.homeGlassesLayout.size, symbolSize: 40)
+                    .shadow(color: selectedCustomItem.tint.opacity(0.24), radius: 8, y: 5)
+                    .offset(
+                        x: selectedCharacter.homeGlassesLayout.offset.width,
+                        y: selectedCharacter.homeGlassesLayout.offset.height
                     )
             }
 
-            HStack(alignment: .center, spacing: 6) {
+            HStack(alignment: .center, spacing: 10) {
                 VStack(spacing: 10) {
                     AppDataPill(
                         iconName: "figure.walk",
@@ -792,8 +829,9 @@ private struct CreaturePage: View {
                     )
                 }
             }
-            .padding(.horizontal, 18)
-            .offset(y: 6)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.horizontal, 8)
+            .offset(y: 24)
 
             Spacer(minLength: 0)
         }
@@ -834,11 +872,11 @@ private struct AppScoreCard: View {
                     .foregroundStyle(GrowmiTheme.warmOrange)
 
                 Text("\(score)")
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
                     .foregroundStyle(GrowmiTheme.textPrimary)
 
                 Text("/100")
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
                     .foregroundStyle(GrowmiTheme.textSecondary)
                     .offset(y: -4)
             }
@@ -856,9 +894,9 @@ private struct AppScoreCard: View {
                 Capsule(style: .continuous)
                     .fill(accentColor.opacity(0.12))
             )
-            .offset(y: 68)
+            .offset(y: 60)
         }
-        .frame(width: 156, height: 136)
+        .frame(width: 124, height: 120)
     }
 }
 
@@ -888,9 +926,9 @@ private struct AppDataPill: View {
                     .minimumScaleFactor(0.8)
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 10)
         .padding(.vertical, 10)
-        .frame(width: 116, alignment: .leading)
+        .frame(width: 102, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color.white.opacity(0.30))
@@ -1117,6 +1155,9 @@ private struct CharacterPage: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 24)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear.frame(height: 104)
         }
     }
 }
