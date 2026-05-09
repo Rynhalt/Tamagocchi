@@ -130,6 +130,17 @@ private extension CharacterKind {
             return "red_trans"
         }
     }
+    
+    var glassesPreviewOffset: CGSize {
+        switch self {
+        case .green:
+            return CGSize(width: 0, height: 64)
+        case .blue:
+            return CGSize(width: -3, height: 64)
+        case .red:
+            return CGSize(width: -1, height: 64)
+        }
+    }
 
     func moodImageName(for score: Int) -> String {
         switch score {
